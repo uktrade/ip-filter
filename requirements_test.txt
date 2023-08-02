@@ -4,17 +4,34 @@
 #
 #    pip-compile --output-file=requirements_test.txt requirements_test.in
 #
+boto3==1.28.17
+    # via
+    #   sample-helper-aws-appconfig
+    #   smart-open
+botocore==1.31.17
+    # via
+    #   boto3
+    #   s3transfer
+    #   sample-helper-aws-appconfig
+cachelib==0.9.0
+    # via flask-caching
 click==7.1.1
     # via flask
 coverage==5.0.4
     # via -r requirements_test.in
+dill==0.3.7
+    # via multiprocess
 flask==1.1.1
+    # via
+    #   -r requirements.in
+    #   flask-caching
+flask-caching==2.0.2
     # via -r requirements.in
-gevent==1.4.0
-    # via gunicorn
+gevent==1.5.0
+    # via -r requirements.in
 greenlet==0.4.15
     # via gevent
-gunicorn[gevent]==20.1.0
+gunicorn==20.1.0
     # via -r requirements.in
 itsdangerous==1.1.0
     # via flask
@@ -23,12 +40,35 @@ jinja2==2.11.3
     #   -r requirements.in
     #   -r requirements_test.in
     #   flask
-markupsafe==1.1.1
-    # via jinja2
+jmespath==1.0.1
+    # via
+    #   boto3
+    #   botocore
+markupsafe==2.1.3
+    # via
+    #   jinja2
+    #   werkzeug
 multiprocess==0.70.14
-urllib3==1.26.5
     # via -r requirements.in
-werkzeug==1.0.0
+python-dateutil==2.8.2
+    # via botocore
+pyyaml==6.0.1
+    # via
+    #   -r requirements.in
+    #   sample-helper-aws-appconfig
+s3transfer==0.6.1
+    # via boto3
+sample-helper-aws-appconfig==2.0.3
+    # via -r requirements.in
+six==1.16.0
+    # via python-dateutil
+smart-open[s3]==6.3.0
+    # via -r requirements.in
+urllib3==1.26.5
+    # via
+    #   -r requirements.in
+    #   botocore
+werkzeug==2.2.3
     # via flask
 
 # The following packages are considered to be unsafe in a requirements file:
