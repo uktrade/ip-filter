@@ -19,10 +19,10 @@ app.config.from_object("settings")
 
 PoolClass = (
     urllib3.HTTPConnectionPool
-    if app.config["ORIGIN_PROTO"] == "http"
+    if app.config["SERVER_PROTO"] == "http"
     else urllib3.HTTPSConnectionPool
 )
-http = PoolClass(app.config["ORIGIN_HOSTNAME"], maxsize=1000)
+http = PoolClass(app.config["SERVER"], maxsize=1000)
 
 logging.basicConfig(stream=sys.stdout, level=app.config["LOG_LEVEL"])
 logger = logging.getLogger(__name__)

@@ -122,8 +122,8 @@ class ConfigurationTestCase(unittest.TestCase):
 
     def _setup_environment_and_make_request(self, env=(), request_path="/"):
         default_env = (
-            ("ORIGIN_HOSTNAME", "localhost:8081"),
-            ("ORIGIN_PROTO", "http"),
+            ("SERVER", "localhost:8081"),
+            ("SERVER_PROTO", "http"),
         )
         self.addCleanup(create_filter(8080, default_env + env))
         self.addCleanup(create_origin(8081))
@@ -242,8 +242,8 @@ class ProxyTestCase(unittest.TestCase):
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "localhost:8081"),
-                    ("ORIGIN_PROTO", "http"),
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
@@ -275,8 +275,8 @@ class ProxyTestCase(unittest.TestCase):
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "localhost:8081"),
-                    ("ORIGIN_PROTO", "http"),
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
@@ -307,8 +307,8 @@ class ProxyTestCase(unittest.TestCase):
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "127.0.0.1:8081"),
-                    ("ORIGIN_PROTO", "http"),
+                    ("SERVER", "127.0.0.1:8081"),
+                    ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
@@ -346,8 +346,8 @@ class ProxyTestCase(unittest.TestCase):
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "localhost:8081"),
-                    ("ORIGIN_PROTO", "http"),
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
@@ -390,8 +390,8 @@ class ProxyTestCase(unittest.TestCase):
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "localhost:8081"),
-                    ("ORIGIN_PROTO", "http"),
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
@@ -434,8 +434,8 @@ class ProxyTestCase(unittest.TestCase):
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "localhost:8081"),
-                    ("ORIGIN_PROTO", "http"),
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
@@ -464,8 +464,8 @@ class ProxyTestCase(unittest.TestCase):
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "localhost:8081"),
-                    ("ORIGIN_PROTO", "http"),
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
@@ -516,8 +516,8 @@ class ProxyTestCase(unittest.TestCase):
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "localhost:8081"),
-                    ("ORIGIN_PROTO", "http"),
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
@@ -564,8 +564,8 @@ class ProxyTestCase(unittest.TestCase):
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "localhost:8081"),
-                    ("ORIGIN_PROTO", "http"),
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
@@ -596,8 +596,8 @@ class ProxyTestCase(unittest.TestCase):
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "localhost:8081"),
-                    ("ORIGIN_PROTO", "http"),
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
@@ -631,8 +631,8 @@ class ProxyTestCase(unittest.TestCase):
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "localhost:8081"),
-                    ("ORIGIN_PROTO", "http"),
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
@@ -663,8 +663,8 @@ class ProxyTestCase(unittest.TestCase):
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "localhost:8081"),
-                    ("ORIGIN_PROTO", "http"),
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
@@ -696,8 +696,8 @@ class ProxyTestCase(unittest.TestCase):
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "localhost:8081"),
-                    ("ORIGIN_PROTO", "http"),
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
@@ -729,8 +729,8 @@ class ProxyTestCase(unittest.TestCase):
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "localhost:8081"),
-                    ("ORIGIN_PROTO", "http"),
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
@@ -762,8 +762,8 @@ class ProxyTestCase(unittest.TestCase):
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "localtest.me:8081"),
-                    ("ORIGIN_PROTO", "http"),
+                    ("SERVER", "localtest.me:8081"),
+                    ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
@@ -808,8 +808,8 @@ class ProxyTestCase(unittest.TestCase):
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "localtest.me:8081"),
-                    ("ORIGIN_PROTO", "http"),
+                    ("SERVER", "localtest.me:8081"),
+                    ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
@@ -876,8 +876,8 @@ class ProxyTestCase(unittest.TestCase):
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "localtest.me:8081"),
-                    ("ORIGIN_PROTO", "http"),
+                    ("SERVER", "localtest.me:8081"),
+                    ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
@@ -915,8 +915,8 @@ class ProxyTestCase(unittest.TestCase):
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "localtest.me:8081"),
-                    ("ORIGIN_PROTO", "http"),
+                    ("SERVER", "localtest.me:8081"),
+                    ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
@@ -980,8 +980,8 @@ class ProxyTestCase(unittest.TestCase):
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "localtest.me:8081"),
-                    ("ORIGIN_PROTO", "http"),
+                    ("SERVER", "localtest.me:8081"),
+                    ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
@@ -1012,8 +1012,8 @@ class ProxyTestCase(unittest.TestCase):
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "localhost:8081"),
-                    ("ORIGIN_PROTO", "http"),
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
@@ -1053,8 +1053,8 @@ class ProxyTestCase(unittest.TestCase):
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "localhost:8081"),
-                    ("ORIGIN_PROTO", "http"),
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
@@ -1087,8 +1087,8 @@ class ProxyTestCase(unittest.TestCase):
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "www.google.com"),
-                    ("ORIGIN_PROTO", "https"),
+                    ("SERVER", "www.google.com"),
+                    ("SERVER_PROTO", "https"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
@@ -1121,8 +1121,8 @@ class ProxyTestCase(unittest.TestCase):
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "does.not.exist"),
-                    ("ORIGIN_PROTO", "https"),
+                    ("SERVER", "does.not.exist"),
+                    ("SERVER_PROTO", "https"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
@@ -1146,8 +1146,8 @@ class ProxyTestCase(unittest.TestCase):
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "does.not.exist"),
-                    ("ORIGIN_PROTO", "http"),
+                    ("SERVER", "does.not.exist"),
+                    ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
@@ -1171,8 +1171,8 @@ class ProxyTestCase(unittest.TestCase):
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "localhost:8081"),
-                    ("ORIGIN_PROTO", "http"),
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
@@ -1207,8 +1207,8 @@ class IpFilterLogicTestCase(unittest.TestCase):
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "localhost:8081"),
-                    ("ORIGIN_PROTO", "http"),
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
@@ -1231,8 +1231,8 @@ class IpFilterLogicTestCase(unittest.TestCase):
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "localhost:8081"),
-                    ("ORIGIN_PROTO", "http"),
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                 ),
             )
@@ -1276,8 +1276,8 @@ IpRanges:
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "localhost:8081"),
-                    ("ORIGIN_PROTO", "http"),
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
                     ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-2"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "mytest:env:iplist"),
@@ -1331,8 +1331,8 @@ IpRanges:
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "localhost:8081"),
-                    ("ORIGIN_PROTO", "http"),
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
                     ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     (
@@ -1405,8 +1405,8 @@ IpRanges:
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "localhost:8081"),
-                    ("ORIGIN_PROTO", "http"),
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
                     ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-2"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig2"),
@@ -1437,8 +1437,8 @@ IpRanges:
             create_filter(
                 8080,
                 (
-                    ("ORIGIN_HOSTNAME", "localhost:8081"),
-                    ("ORIGIN_PROTO", "http"),
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                 ),
             )

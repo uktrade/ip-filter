@@ -11,13 +11,13 @@ CACHE_DEFAULT_TIMEOUT = 300
 
 ENVIRONMENT_NAME = env["COPILOT_ENVIRONMENT_NAME"]
 
-ORIGIN_PROTO = env.get("ORIGIN_PROTO", "http")
-ORIGIN_HOSTNAME = env["ORIGIN_HOSTNAME"]
+SERVER_PROTO = env.get("SERVER_PROTO", "http")
+SERVER = env["SERVER"]
 LOG_LEVEL = env.get("LOG_LEVEL", "WARN")
 APPCONFIG_URL = env.get("APPCONFIG_URL", "http://localhost:2772")
 
-EMAIL_NAME = env["EMAIL_NAME"]
-EMAIL = env["EMAIL"]
+EMAIL_NAME = env.get("EMAIL_NAME", "DBT")
+EMAIL = env.get("EMAIL", "sre-notify@digital.trade.gov.uk")
 
 IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX = env.int(
     "IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", default=-1
