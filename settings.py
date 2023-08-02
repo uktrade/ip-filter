@@ -9,7 +9,7 @@ DEBUG = env.bool("DEBUG", default=False)
 CACHE_TYPE = "SimpleCache"
 CACHE_DEFAULT_TIMEOUT = 300
 
-ENVIRONMENT = env["COPILOT_ENVIRONMENT"]
+ENVIRONMENT_NAME = env["COPILOT_ENVIRONMENT_NAME"]
 
 ORIGIN_PROTO = env.get("ORIGIN_PROTO", "http")
 ORIGIN_HOSTNAME = env["ORIGIN_HOSTNAME"]
@@ -20,7 +20,7 @@ EMAIL_NAME = env["EMAIL_NAME"]
 EMAIL = env["EMAIL"]
 
 IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX = env.int(
-    "IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", default=-2
+    "IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", default=-1
 )
 
 # These settings can be overridden per environment, e.g. if $COPILOT_ENVIRONMENT is set to "staging", then

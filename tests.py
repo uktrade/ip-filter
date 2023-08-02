@@ -38,7 +38,7 @@ class EnvironTestCase(unittest.TestCase):
     def test_missing_key_raises_keyerror(self):
         env = Environ(
             {
-                "COPILOT_ENVIRONMENT": "staging",
+                "COPILOT_ENVIRONMENT_NAME": "staging",
             }
         )
 
@@ -57,7 +57,7 @@ class EnvironTestCase(unittest.TestCase):
     def test_default_values(self):
         env = Environ(
             {
-                "COPILOT_ENVIRONMENT": "staging",
+                "COPILOT_ENVIRONMENT_NAME": "staging",
             }
         )
 
@@ -70,7 +70,7 @@ class EnvironTestCase(unittest.TestCase):
     def test_type_conversion_bool(self):
         env = Environ(
             {
-                "COPILOT_ENVIRONMENT": "staging",
+                "COPILOT_ENVIRONMENT_NAME": "staging",
                 "IS_TRUE": "True",
                 "IS_FALSE": "False",
             }
@@ -82,7 +82,7 @@ class EnvironTestCase(unittest.TestCase):
     def test_type_conversion_list(self):
         env = Environ(
             {
-                "COPILOT_ENVIRONMENT": "staging",
+                "COPILOT_ENVIRONMENT_NAME": "staging",
                 "MULTIPLE": "profile1, profile2, profile3",
                 "SINGLE_ITEM": "False",
                 "EMPTY": "",
@@ -95,7 +95,7 @@ class EnvironTestCase(unittest.TestCase):
     def test_type_conversion_int(self):
         env = Environ(
             {
-                "COPILOT_ENVIRONMENT": "staging",
+                "COPILOT_ENVIRONMENT_NAME": "staging",
                 "TEST": "-1",
             }
         )
@@ -104,7 +104,7 @@ class EnvironTestCase(unittest.TestCase):
     def test_type_with_environment_overrides(self):
         env = Environ(
             {
-                "COPILOT_ENVIRONMENT": "staging",
+                "COPILOT_ENVIRONMENT_NAME": "staging",
                 "RANDOM_FIELD": "base-value",
                 "STAGING_RANDOM_FIELD": "environment-override",
             }
@@ -148,7 +148,7 @@ class ConfigurationTestCase(unittest.TestCase):
         """
         response = self._setup_environment_and_make_request(
             (
-                ("COPILOT_ENVIRONMENT", "staging"),
+                ("COPILOT_ENVIRONMENT_NAME", "staging"),
                 ("IPFILTER_ENABLED", "False"),
             )
         )
@@ -158,7 +158,7 @@ class ConfigurationTestCase(unittest.TestCase):
     def test_ipfiler_enabled_globally_but_disabled_for_environment(self):
         response = self._setup_environment_and_make_request(
             (
-                ("COPILOT_ENVIRONMENT", "staging"),
+                ("COPILOT_ENVIRONMENT_NAME", "staging"),
                 ("IPFILTER_ENABLED", "True"),
                 ("STAGING_IPFILTER_ENABLED", "False"),
             )
@@ -169,7 +169,7 @@ class ConfigurationTestCase(unittest.TestCase):
     def test_ipfiler_enabled_and_path_is_in_public_paths(self):
         response = self._setup_environment_and_make_request(
             (
-                ("COPILOT_ENVIRONMENT", "staging"),
+                ("COPILOT_ENVIRONMENT_NAME", "staging"),
                 ("IPFILTER_ENABLED", "True"),
                 ("PUBLIC_PATHS", "/public-test"),
             ),
@@ -181,7 +181,7 @@ class ConfigurationTestCase(unittest.TestCase):
     def test_ipfiler_enabled_and_path_is_not_in_public_paths(self):
         response = self._setup_environment_and_make_request(
             (
-                ("COPILOT_ENVIRONMENT", "staging"),
+                ("COPILOT_ENVIRONMENT_NAME", "staging"),
                 ("IPFILTER_ENABLED", "True"),
                 ("PUBLIC_PATHS", "/public-test"),
             ),
@@ -193,7 +193,7 @@ class ConfigurationTestCase(unittest.TestCase):
     def test_ipfiler_enabled_and_path_is_in_protected_paths(self):
         response = self._setup_environment_and_make_request(
             (
-                ("COPILOT_ENVIRONMENT", "staging"),
+                ("COPILOT_ENVIRONMENT_NAME", "staging"),
                 ("IPFILTER_ENABLED", "True"),
                 ("PROTECTED_PATHS", "/protected-test"),
             ),
@@ -204,7 +204,7 @@ class ConfigurationTestCase(unittest.TestCase):
     def test_ipfiler_enabled_and_path_is_not_in_protected_paths(self):
         response = self._setup_environment_and_make_request(
             (
-                ("COPILOT_ENVIRONMENT", "staging"),
+                ("COPILOT_ENVIRONMENT_NAME", "staging"),
                 ("IPFILTER_ENABLED", "True"),
                 ("PROTECTED_PATHS", "/protected-test"),
             ),
@@ -220,7 +220,7 @@ class ConfigurationTestCase(unittest.TestCase):
 
         response = self._setup_environment_and_make_request(
             (
-                ("COPILOT_ENVIRONMENT", "staging"),
+                ("COPILOT_ENVIRONMENT_NAME", "staging"),
                 ("IPFILTER_ENABLED", "True"),
                 ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
             )
@@ -244,7 +244,7 @@ class ProxyTestCase(unittest.TestCase):
                 (
                     ("ORIGIN_HOSTNAME", "localhost:8081"),
                     ("ORIGIN_PROTO", "http"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
             )
@@ -277,7 +277,7 @@ class ProxyTestCase(unittest.TestCase):
                 (
                     ("ORIGIN_HOSTNAME", "localhost:8081"),
                     ("ORIGIN_PROTO", "http"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
             )
@@ -309,7 +309,7 @@ class ProxyTestCase(unittest.TestCase):
                 (
                     ("ORIGIN_HOSTNAME", "127.0.0.1:8081"),
                     ("ORIGIN_PROTO", "http"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
             )
@@ -348,7 +348,7 @@ class ProxyTestCase(unittest.TestCase):
                 (
                     ("ORIGIN_HOSTNAME", "localhost:8081"),
                     ("ORIGIN_PROTO", "http"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
             )
@@ -392,7 +392,7 @@ class ProxyTestCase(unittest.TestCase):
                 (
                     ("ORIGIN_HOSTNAME", "localhost:8081"),
                     ("ORIGIN_PROTO", "http"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
             )
@@ -436,7 +436,7 @@ class ProxyTestCase(unittest.TestCase):
                 (
                     ("ORIGIN_HOSTNAME", "localhost:8081"),
                     ("ORIGIN_PROTO", "http"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
             )
@@ -466,7 +466,7 @@ class ProxyTestCase(unittest.TestCase):
                 (
                     ("ORIGIN_HOSTNAME", "localhost:8081"),
                     ("ORIGIN_PROTO", "http"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
             )
@@ -518,7 +518,7 @@ class ProxyTestCase(unittest.TestCase):
                 (
                     ("ORIGIN_HOSTNAME", "localhost:8081"),
                     ("ORIGIN_PROTO", "http"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
             )
@@ -566,7 +566,7 @@ class ProxyTestCase(unittest.TestCase):
                 (
                     ("ORIGIN_HOSTNAME", "localhost:8081"),
                     ("ORIGIN_PROTO", "http"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
             )
@@ -598,7 +598,7 @@ class ProxyTestCase(unittest.TestCase):
                 (
                     ("ORIGIN_HOSTNAME", "localhost:8081"),
                     ("ORIGIN_PROTO", "http"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
             )
@@ -633,7 +633,7 @@ class ProxyTestCase(unittest.TestCase):
                 (
                     ("ORIGIN_HOSTNAME", "localhost:8081"),
                     ("ORIGIN_PROTO", "http"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
             )
@@ -665,7 +665,7 @@ class ProxyTestCase(unittest.TestCase):
                 (
                     ("ORIGIN_HOSTNAME", "localhost:8081"),
                     ("ORIGIN_PROTO", "http"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
             )
@@ -698,7 +698,7 @@ class ProxyTestCase(unittest.TestCase):
                 (
                     ("ORIGIN_HOSTNAME", "localhost:8081"),
                     ("ORIGIN_PROTO", "http"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
             )
@@ -731,7 +731,7 @@ class ProxyTestCase(unittest.TestCase):
                 (
                     ("ORIGIN_HOSTNAME", "localhost:8081"),
                     ("ORIGIN_PROTO", "http"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
             )
@@ -764,7 +764,7 @@ class ProxyTestCase(unittest.TestCase):
                 (
                     ("ORIGIN_HOSTNAME", "localtest.me:8081"),
                     ("ORIGIN_PROTO", "http"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
             )
@@ -810,7 +810,7 @@ class ProxyTestCase(unittest.TestCase):
                 (
                     ("ORIGIN_HOSTNAME", "localtest.me:8081"),
                     ("ORIGIN_PROTO", "http"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
             )
@@ -878,7 +878,7 @@ class ProxyTestCase(unittest.TestCase):
                 (
                     ("ORIGIN_HOSTNAME", "localtest.me:8081"),
                     ("ORIGIN_PROTO", "http"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
             )
@@ -917,7 +917,7 @@ class ProxyTestCase(unittest.TestCase):
                 (
                     ("ORIGIN_HOSTNAME", "localtest.me:8081"),
                     ("ORIGIN_PROTO", "http"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
             )
@@ -982,7 +982,7 @@ class ProxyTestCase(unittest.TestCase):
                 (
                     ("ORIGIN_HOSTNAME", "localtest.me:8081"),
                     ("ORIGIN_PROTO", "http"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
             )
@@ -1014,7 +1014,7 @@ class ProxyTestCase(unittest.TestCase):
                 (
                     ("ORIGIN_HOSTNAME", "localhost:8081"),
                     ("ORIGIN_PROTO", "http"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
             )
@@ -1055,7 +1055,7 @@ class ProxyTestCase(unittest.TestCase):
                 (
                     ("ORIGIN_HOSTNAME", "localhost:8081"),
                     ("ORIGIN_PROTO", "http"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
             )
@@ -1089,7 +1089,7 @@ class ProxyTestCase(unittest.TestCase):
                 (
                     ("ORIGIN_HOSTNAME", "www.google.com"),
                     ("ORIGIN_PROTO", "https"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
             )
@@ -1123,7 +1123,7 @@ class ProxyTestCase(unittest.TestCase):
                 (
                     ("ORIGIN_HOSTNAME", "does.not.exist"),
                     ("ORIGIN_PROTO", "https"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
             )
@@ -1148,7 +1148,7 @@ class ProxyTestCase(unittest.TestCase):
                 (
                     ("ORIGIN_HOSTNAME", "does.not.exist"),
                     ("ORIGIN_PROTO", "http"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
             )
@@ -1173,7 +1173,7 @@ class ProxyTestCase(unittest.TestCase):
                 (
                     ("ORIGIN_HOSTNAME", "localhost:8081"),
                     ("ORIGIN_PROTO", "http"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
             )
@@ -1209,7 +1209,7 @@ class IpFilterLogicTestCase(unittest.TestCase):
                 (
                     ("ORIGIN_HOSTNAME", "localhost:8081"),
                     ("ORIGIN_PROTO", "http"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
                 ),
             )
@@ -1233,7 +1233,7 @@ class IpFilterLogicTestCase(unittest.TestCase):
                 (
                     ("ORIGIN_HOSTNAME", "localhost:8081"),
                     ("ORIGIN_PROTO", "http"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                 ),
             )
         )
@@ -1279,7 +1279,7 @@ IpRanges:
                     ("ORIGIN_HOSTNAME", "localhost:8081"),
                     ("ORIGIN_PROTO", "http"),
                     ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-2"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "mytest:env:iplist"),
                 ),
             )
@@ -1334,7 +1334,7 @@ IpRanges:
                     ("ORIGIN_HOSTNAME", "localhost:8081"),
                     ("ORIGIN_PROTO", "http"),
                     ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     (
                         "APPCONFIG_PROFILES",
                         "testapp:testenv:testconfig,testapp:testenv:testconfig2",
@@ -1408,7 +1408,7 @@ IpRanges:
                     ("ORIGIN_HOSTNAME", "localhost:8081"),
                     ("ORIGIN_PROTO", "http"),
                     ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-2"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig2"),
                 ),
             )
@@ -1439,7 +1439,7 @@ IpRanges:
                 (
                     ("ORIGIN_HOSTNAME", "localhost:8081"),
                     ("ORIGIN_PROTO", "http"),
-                    ("COPILOT_ENVIRONMENT", "staging"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
                 ),
             )
         )
