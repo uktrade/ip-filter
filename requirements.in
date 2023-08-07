@@ -8,3 +8,4 @@ jinja2==2.11.3
 smart_open
 smart_open[s3]
 pyyaml
+

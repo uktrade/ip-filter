@@ -12,7 +12,7 @@ botocore==1.29.29
     #   s3transfer
 click==7.1.1
     # via flask
-flask==1.1.1
+flask==2.2.3
     # via -r requirements.in
 Flask-Caching==2.0.2
     # via -r requirements.in
@@ -22,9 +22,9 @@ greenlet==0.4.15
     # via gevent
 gunicorn==20.1.0
     # via -r requirements.in
-itsdangerous==1.1.0
+itsdangerous==2.1.2
     # via flask
-jinja2==2.11.3
+jinja2==3.1.2
     # via
     #   -r requirements.in
     #   flask
@@ -49,6 +49,7 @@ urllib3==1.26.5
     #   -r requirements.in
     #   botocore
 werkzeug==1.0.0
+
     # via flask
 
 # The following packages are considered to be unsafe in a requirements file:
