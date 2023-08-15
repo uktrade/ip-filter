@@ -1,19 +1,25 @@
+import logging
 import os
+import sys
+
 from config import Environ
 
 env = Environ(os.environ)
 
-DEBUG = env.bool("DEBUG", default=False)
+LOG_LEVEL = env.get("LOG_LEVEL", "WARN")
+
+logging.basicConfig(stream=sys.stdout, level=LOG_LEVEL)
+logger = logging.getLogger(__name__)
 
 # Flask-Caching related configs
 CACHE_TYPE = "SimpleCache"
 CACHE_DEFAULT_TIMEOUT = 300
-
+DEBUG = env.bool("DEBUG", default=False)
 ENVIRONMENT_NAME = env["COPILOT_ENVIRONMENT_NAME"]
 
 SERVER_PROTO = env.get("SERVER_PROTO", "http")
 SERVER = env["SERVER"]
-LOG_LEVEL = env.get("LOG_LEVEL", "WARN")
+
 APPCONFIG_URL = env.get("APPCONFIG_URL", "http://localhost:2772")
 
 EMAIL_NAME = env.get("EMAIL_NAME", "DBT")

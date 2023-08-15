@@ -97,29 +97,17 @@ def handle_request(u_path):
         # public and protected path settings are mutually exclusive. So if both are enabled, ignore PROTECTED_PATHS
         # so that paths must be explicitly whitelisted.  We also emit a log message to indicate the that the IP filter is 
         # misconfigured.
-        logging.warning("Configuration error: PROTECTED_PATHS and PUBLIC_PATHS are mutually exclusive; ignoring PROTECTED_PATHS")
-        protected_paths = []
-
-    protected_paths_enabled = bool(protected_paths)
-    public_paths_enabled = bool(public_paths)  
-    path_is_protected = any(request.path.startswith(path) for path in protected_paths)
-    path_is_public = any(request.path.startswith(path) for path in public_paths)    
-
-    print("ip filter enabled" + str(app.config["IPFILTER_ENABLED"]))
-    print(f"protected paths: {protected_paths}")
-    print(f"public paths: {public_paths}")
-    print("path: " + request.path)
-    print(f"protected_paths_enabled: {protected_paths_enabled}")
-    print(f"public_paths_is_enabled: {public_paths_enabled}")
-    print(f"path_is_protected: {path_is_protected}")
-    print(f"path_is_public: {path_is_public}")
+        logger.warning("Configuration error: PROTECTED_PATHS and PUBLIC_PATHS are mutually exclusive; ignoring PROTECTED_PATHS")
+        protected_paths = []  
 
     ip_filter_enabled_and_required_for_path = app.config["IPFILTER_ENABLED"]
 
-    if bool(protected_paths) and not path_is_protected:
+    # Paths are public by default unless listed in the PROTECTED_PATHS env var
+    if bool(protected_paths) and not any(request.path.startswith(path) for path in protected_paths):
         ip_filter_enabled_and_required_for_path = False
 
-    if bool(public_paths) and path_is_public:
+    # Paths are protected by default unless listed in the PUBLIC_PATHS env var
+    if bool(public_paths) and any(request.path.startswith(path) for path in public_paths):
         ip_filter_enabled_and_required_for_path = False
 
     if ip_filter_enabled_and_required_for_path:
