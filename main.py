@@ -13,6 +13,8 @@ from flask import Flask
 
 from pathlib import Path
 
+HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]
+
 app = Flask(__name__, template_folder=Path(__file__).parent, static_folder=None)
 app.config.from_object("settings")
 
@@ -47,11 +49,11 @@ def render_access_denied(client_ip, forwarded_url, request_id):
 @app.route(
     "/",
     defaults={"u_path": ""},
-    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+    methods=HTTP_METHODS,
 )
 @app.route(
     "/<path:u_path>",
-    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+    methods=HTTP_METHODS,
 )
 def handle_request(u_path):
     request_id = request.headers.get("X-B3-TraceId") or "".join(
@@ -67,6 +69,9 @@ def handle_request(u_path):
     try:
         x_forwarded_for = request.headers["X-Forwarded-For"]
     except KeyError:
+        if request.headers.get("user-agent", "").startswith("ELB-HealthChecker"):
+            return "OK"
+
         logger.error("[%s] X-Forwarded-For header is missing", request_id)
         return render_access_denied("Unknown", forwarded_url, request_id)
 
@@ -85,21 +90,37 @@ def handle_request(u_path):
     # TODO: add shared header if enabled
     headers_to_remove = ["connection"]
 
-    ip_filter_enabled_and_required_for_path = (
-        app.config["IPFILTER_ENABLED"]
-        and (
-            not app.config["PROTECTED_PATHS"]
-            or any(
-                path.startswith(request.path) for path in app.config["PROTECTED_PATHS"]
-            )
-        )
-        and (
-            not app.config["PUBLIC_PATHS"]
-            or not any(
-                path.startswith(request.path) for path in app.config["PUBLIC_PATHS"]
-            )
-        )
-    )
+    protected_paths = app.config["PROTECTED_PATHS"]
+    public_paths = app.config["PUBLIC_PATHS"]
+
+    if public_paths and protected_paths:
+        # public and protected path settings are mutually exclusive. So if both are enabled, ignore PROTECTED_PATHS
+        # so that paths must be explicitly whitelisted.  We also emit a log message to indicate the that the IP filter is 
+        # misconfigured.
+        logging.warning("Configuration error: PROTECTED_PATHS and PUBLIC_PATHS are mutually exclusive; ignoring PROTECTED_PATHS")
+        protected_paths = []
+
+    protected_paths_enabled = bool(protected_paths)
+    public_paths_enabled = bool(public_paths)  
+    path_is_protected = any(request.path.startswith(path) for path in protected_paths)
+    path_is_public = any(request.path.startswith(path) for path in public_paths)    
+
+    print("ip filter enabled" + str(app.config["IPFILTER_ENABLED"]))
+    print(f"protected paths: {protected_paths}")
+    print(f"public paths: {public_paths}")
+    print("path: " + request.path)
+    print(f"protected_paths_enabled: {protected_paths_enabled}")
+    print(f"public_paths_is_enabled: {public_paths_enabled}")
+    print(f"path_is_protected: {path_is_protected}")
+    print(f"path_is_public: {path_is_public}")
+
+    ip_filter_enabled_and_required_for_path = app.config["IPFILTER_ENABLED"]
+
+    if bool(protected_paths) and not path_is_protected:
+        ip_filter_enabled_and_required_for_path = False
+
+    if bool(public_paths) and path_is_public:
+        ip_filter_enabled_and_required_for_path = False
 
     if ip_filter_enabled_and_required_for_path:
         ip_filter_rules = get_ipfilter_config(app.config["APPCONFIG_PROFILES"])
