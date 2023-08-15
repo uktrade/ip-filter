@@ -1,4 +1,4 @@
 application:
-  name: ipfilter 
+  name: ip-filter 
   process:
-    - ipfilter 
+    - False

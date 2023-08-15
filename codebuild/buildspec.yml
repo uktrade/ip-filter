@@ -1,24 +1,10 @@
 version: 0.2
 
-#env:
-#  parameter-store:
-#    SLACK_WORKSPACE_ID: "/codebuild/slack_workspace_id"
-#    SLACK_CHANNEL_ID: "/codebuild/slack_channel_id"
-#    SLACK_TOKEN: "/codebuild/slack_api_token"
-#   variables:
-#     VERSION:  v0.27.0
-#     INPUT_BUILDER: paketobuildpacks/builder:0.2.263-full
-#     TAG: latest
-#     APP_NAME: demodjango
-#     LOG_LEVEL: DEBUG
-
-
+env:
+    variables:
+      ECR_VISIBILITY: PUBLIC
 
 phases:
-#   install:
-#     commands:
-#        - codebuild-breakpoint
-#
   build:
     commands:
         - /work/build.sh
