@@ -8,7 +8,7 @@ A configurable IP Filter for AWS Copilot/ECS that allows access to applications 
 
 The IP Filter is designed to run as a sidecar container that reverse proxies traffic to the service container. It also requires the AppConfig ECS agent sidecar which it uses to pull config updates from AppConfig.
 
-The IP filter requires the `$COPILOT_ENVIRONMENT_NAME` environment variable which is automatically set by AWS Copilot.  This allows environment level configuration, for example:
+The IP Filter requires the `$COPILOT_ENVIRONMENT_NAME` environment variable which is automatically set by AWS Copilot.  This allows environment level configuration, for example:
 
 ```
 # These settings apply globally to all environments
@@ -44,10 +44,10 @@ The following settings can be applied globally and overridden on a per environme
 
 | Variable                 |  Description | Example |
 | ---                      | ---          | ---     |
-| `IPFILTER_ENABLED` | Is the IP filter enabled? If disabled traffic will be proxied directly to the service | `True`
+| `IPFILTER_ENABLED` | Is the IP Filter enabled? If disabled traffic will be proxied directly to the service | `True`
 | `APPCONFIG_PROFILES` | A comma separated list of AppConfig profiles | `default:rule:set`
-| `PUBLIC_PATHS` | A comma separated list of path prefixes that are not proteted by the IP filter | `/healthcheck,/robots.txt`
-| `PROTECTED_PATHS` | A comma separated list of path prefixes that are protected by the IP filter | `/admin,/api`
+| `PUBLIC_PATHS` | A comma separated list of path prefixes that are not proteted by the IP Filter | `/healthcheck,/robots.txt`
+| `PROTECTED_PATHS` | A comma separated list of path prefixes that are protected by the IP Filter | `/admin,/api`
 
 These environment variables can be overridden for a given `$COPILOT_ENVIRONMENT_NAME`, for example:
 
@@ -56,15 +56,27 @@ IPFILTER_ENABLED=True
 PRODUCTION_PROTECTED_PATHS=/admin/
 ```
 
-In this example, the IP filter is enabled for all environments, but in production only the `/admin/` path is protected.
+In this example, the IP Filter is enabled for all environments, but in production only the `/admin/` path is protected.
 
 ### Usage of PUBLIC_PATHS and PROTECTED_PATHS
 
-By default the IP filter protects every path.  However, any paths supplied in `PUBLIC_PATHS` will be publically accessible.  The typical use case is to allow place a site behind the IP filter, whilst allowing the `\healthcheck` endpoint to remain public.
+By default the IP Filter protects every path.  However, any paths listed in `PUBLIC_PATHS` will be publically accessible.  The typical use case is to allow the `/healthcheck` endpoint to remain public.
 
 Conversely, if `PROTECTED_PATHS` is set, then every path not listed in `PROTECTED_PATHS` will be public.  The typical usecase is to protect only the `\admin` path in a public site.
 
-These environment variables are designed to be mutally exclusive.
+These environment variables are designed to be mutally exclusive; if both are set, a warning will appear in the IP Filter logs and the `PROTECTED_PATHS` setting will be ignored.
+
+You can unset these variables on a per environment basis, e.g. 
+
+```
+# By default, for all envrionments, the IP Filter is applied to every path except `/healthcheck`
+PUBLIC_PATHS=/healthcheck
+
+# PUBLIC_PATHS is overridden and unset for the production environment
+# The `/admin` url is protected by the IP Filter, and all other paths are public by default. 
+PRODUCTION_PUBLIC_PATHS=
+PRODUCTION_PROTECTED_PATHS=/admin
+```
 
 ### AppConfig configuration
 
@@ -88,7 +100,7 @@ BasicAuth:
 
 Basic auth enables automated testing tools such as Browserstack to bypass the IP whitelist. This is only on non production automated testing environments where it isn't possible to whitelist the IP range of the testing service.
 
-If multiple basic auth configurations are provided, then the IP filter ensures that at lesaat one of the configurations is valid.
+If multiple basic auth configurations are provided, then the IP Filter ensures that at lesaat one of the configurations is valid.
 
 Shared token:
 
@@ -99,7 +111,7 @@ SharedToken:
 ```
 A request will be blocked if it does not include a header with the name `x-my-shared-token` and the value `some-secure-value` in the request. The shared token header is then set by the CDN and is used to ensure the website only serves traffic to requests which originated via the CDN.
 
-If multiple shared tokens are configured then the IP filter checks that at least one shared token header and value is supplied.
+If multiple shared tokens are configured then the IP Filter checks that at least one shared token header and value is supplied.
 
 ### Minimal configuration
 

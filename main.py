@@ -87,7 +87,7 @@ def handle_request(u_path):
         )
         return render_access_denied("Unknown", forwarded_url, request_id)
 
-    # TODO: add shared header if enabled
+    # TODO: The shared token header shoould also be removed.
     headers_to_remove = ["connection"]
 
     protected_paths = app.config["PROTECTED_PATHS"]
