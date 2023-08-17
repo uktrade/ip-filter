@@ -68,7 +68,7 @@ These environment variables are designed to be mutally exclusive.
 
 ### AppConfig configuration
 
-AppConfig profiles specified in the `$APPCONFIG_PROFILES` environment variable are retrieved and combined into a single list of IPs. basic auth config and shared tokens.
+AppConfig profiles specified in the `$APPCONFIG_PROFILES` environment variable are retrieved and combined into a single list of IPs, basic auth config and shared tokens.
 
 ```
 IpRanges:
