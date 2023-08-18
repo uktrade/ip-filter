@@ -94,20 +94,26 @@ def handle_request(u_path):
     public_paths = app.config["PUBLIC_PATHS"]
 
     if public_paths and protected_paths:
-        # public and protected path settings are mutually exclusive. So if both are enabled, ignore PROTECTED_PATHS
-        # so that paths must be explicitly whitelisted.  We also emit a log message to indicate the that the IP filter is 
-        # misconfigured.
-        logger.warning("Configuration error: PROTECTED_PATHS and PUBLIC_PATHS are mutually exclusive; ignoring PROTECTED_PATHS")
-        protected_paths = []  
+        # public and protected path settings are mutually exclusive. If both are enabled, we ignore the PROTECTED_PATHS
+        # setting and emit a log message to indicate the that the IP Filter is
+        # misconfigured.
+        logger.warning(
+            "Configuration error: PROTECTED_PATHS and PUBLIC_PATHS are mutually exclusive; ignoring PROTECTED_PATHS"
+        )
+        protected_paths = []
 
     ip_filter_enabled_and_required_for_path = app.config["IPFILTER_ENABLED"]
 
     # Paths are public by default unless listed in the PROTECTED_PATHS env var
-    if bool(protected_paths) and not any(request.path.startswith(path) for path in protected_paths):
+    if bool(protected_paths) and not any(
+        request.path.startswith(path) for path in protected_paths
+    ):
         ip_filter_enabled_and_required_for_path = False
 
     # Paths are protected by default unless listed in the PUBLIC_PATHS env var
-    if bool(public_paths) and any(request.path.startswith(path) for path in public_paths):
+    if bool(public_paths) and any(
+        request.path.startswith(path) for path in public_paths
+    ):
         ip_filter_enabled_and_required_for_path = False
 
     if ip_filter_enabled_and_required_for_path:

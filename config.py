@@ -6,7 +6,7 @@ import yaml
 
 
 class Environ(UserDict):
-    """Handle app configuration from os.environ with supprt for copilot environment specific configuration and type conversion."""
+    """Handle app configuration from os.environ with support for copilot environment specific configuration and type conversion."""
 
     def get_value(self, key, /, default=None, allow_environment_override=False):
         environment = self.data["COPILOT_ENVIRONMENT_NAME"].upper()

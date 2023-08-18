@@ -60,11 +60,13 @@ In this example, the IP Filter is enabled for all environments, but in productio
 
 ### Usage of PUBLIC_PATHS and PROTECTED_PATHS
 
-By default the IP Filter protects every path.  However, any paths listed in `PUBLIC_PATHS` will be publically accessible.  The typical use case is to allow the `/healthcheck` endpoint to remain public.
+By default the IP Filter protects every path.  However, you can configure the IP Filter to allow public access to a subset of paths, or to only protect a subset of paths.
 
-Conversely, if `PROTECTED_PATHS` is set, then every path not listed in `PROTECTED_PATHS` will be public.  The typical usecase is to protect only the `\admin` path in a public site.
+Any paths listed in `PUBLIC_PATHS` will be publically accessible.  The typical use case is to allow the `/healthcheck` endpoint to remain public.
 
-These environment variables are designed to be mutally exclusive; if both are set, a warning will appear in the IP Filter logs and the `PROTECTED_PATHS` setting will be ignored.
+Conversely, if `PROTECTED_PATHS` is set, then every path not listed in `PROTECTED_PATHS` will be public.  The typical usecase is to protect only the `/admin` path of a public site.
+
+The `PUBLIC_PATHS` and `PROTECTED_PATHS` environment variables are mutally exclusive; if both are set, then a configuration warning will appear in the IP Filter logs and the `PROTECTED_PATHS` setting will be ignored.
 
 You can unset these variables on a per environment basis, e.g. 
 
@@ -72,9 +74,8 @@ You can unset these variables on a per environment basis, e.g.
 # By default, for all envrionments, the IP Filter is applied to every path except `/healthcheck`
 PUBLIC_PATHS=/healthcheck
 
-# PUBLIC_PATHS is overridden and unset for the production environment
 # The `/admin` url is protected by the IP Filter, and all other paths are public by default. 
-PRODUCTION_PUBLIC_PATHS=
+PRODUCTION_PUBLIC_PATHS=    # unset for the production environment
 PRODUCTION_PROTECTED_PATHS=/admin
 ```
 
@@ -100,7 +101,7 @@ BasicAuth:
 
 Basic auth enables automated testing tools such as Browserstack to bypass the IP whitelist. This is only on non production automated testing environments where it isn't possible to whitelist the IP range of the testing service.
 
-If multiple basic auth configurations are provided, then the IP Filter ensures that at lesaat one of the configurations is valid.
+If multiple basic auth configurations are provided, then the IP Filter ensures that at least the basic auth credentials supplied in the request authenticate against at least onf the configurations.
 
 Shared token:
 
@@ -109,7 +110,7 @@ SharedToken:
     - HeaderName: x-my-shared-token
       Value: some-secure-value
 ```
-A request will be blocked if it does not include a header with the name `x-my-shared-token` and the value `some-secure-value` in the request. The shared token header is then set by the CDN and is used to ensure the website only serves traffic to requests which originated via the CDN.
+A request will be blocked if it does not include a header with the name `x-my-shared-token` and the value `some-secure-value` in the request. The shared token header is then set by the CDN and is used to ensure the website only serves traffic to requests which originate via the CDN.
 
 If multiple shared tokens are configured then the IP Filter checks that at least one shared token header and value is supplied.
 

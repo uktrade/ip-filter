@@ -15,8 +15,6 @@ import time
 import unittest
 import urllib.parse
 import uuid
-import unittest
-from unittest.mock import patch
 
 from flask import (
     abort,
@@ -136,17 +134,20 @@ class EnvironTestCase(unittest.TestCase):
 
         self.assertEqual(
             env.list("PROTECTED_PATHS", allow_environment_override=False),
-            ["one", "two", "three"])
+            ["one", "two", "three"],
+        )
         self.assertEqual(
-            env.list("PROTECTED_PATHS", allow_environment_override=True),
-            []
+            env.list("PROTECTED_PATHS", allow_environment_override=True), []
         )
 
 
 class ConfigurationTestCase(unittest.TestCase):
     """Tests covering the configuration logic"""
 
-    def _setup_environment(self, env=(), ):
+    def _setup_environment(
+        self,
+        env=(),
+    ):
         default_env = (
             ("SERVER", "localhost:8081"),
             ("SERVER_PROTO", "http"),
@@ -259,19 +260,18 @@ class ConfigurationTestCase(unittest.TestCase):
         self.assertNotIn("x-echo-header-connection", response.headers)
 
     def test_protected_paths_and_public_paths_are_mutually_exclusive(self):
-
-        # We aren't checking for log output as the log is emitted from another process so `TestCase.assertLogs` does not 
-        # capture them. 
+        # We aren't checking for log output as the log is emitted from another process so `TestCase.assertLogs` does not
+        # capture them.
 
         response = self._setup_environment(
             (
-            ("COPILOT_ENVIRONMENT_NAME", "staging"),
-            ("IPFILTER_ENABLED", "True"),
-            ("PROTECTED_PATHS", "/protected-test"),
-            ("PUBLIC_PATHS", "/healthcheck"),
+                ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                ("IPFILTER_ENABLED", "True"),
+                ("PROTECTED_PATHS", "/protected-test"),
+                ("PUBLIC_PATHS", "/healthcheck"),
             ),
-        )        
-        
+        )
+
         response = self._make_request("/healthcheck")
         self.assertEqual(response.status, 200)
 
@@ -582,7 +582,9 @@ class ProxyTestCase(unittest.TestCase):
         # restart the origin server. Hopefully not too flaky.
         self.assertNotEqual(remote_port_1, remote_port_2)
 
-    @unittest.skip("THis test hangs indefinitely, likely because `gunicorn --timeout 0`")
+    @unittest.skip(
+        "THis test hangs indefinitely, likely because `gunicorn --timeout 0`"
+    )
     def test_no_issue_if_request_unfinished(self):
         self.addCleanup(create_appconfig_agent(2772))
         self.addCleanup(
