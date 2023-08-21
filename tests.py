@@ -185,7 +185,7 @@ class ConfigurationTestCase(unittest.TestCase):
         self.assertEqual(response.status, 200)
         self.assertNotIn("x-echo-header-connection", response.headers)
 
-    def test_ipfiler_enabled_globally_but_disabled_for_environment(self):
+    def test_ipfilter_enabled_globally_but_disabled_for_environment(self):
         self._setup_environment(
             (
                 ("COPILOT_ENVIRONMENT_NAME", "staging"),
