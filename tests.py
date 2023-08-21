@@ -302,7 +302,7 @@ class ConfigurationTestCase(unittest.TestCase):
 
 
 class ProxyTestCase(unittest.TestCase):
-    """Tests that covery the ip filter's proxy functionality"""
+    """Tests that cover the ip filter's proxy functionality"""
 
     def test_meta_wait_until_connectable_raises(self):
         with self.assertRaises(OSError):
