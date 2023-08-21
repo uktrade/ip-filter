@@ -1,4 +1,4 @@
-# IP-Filter
+# IP Filter
 
 A configurable IP Filter for AWS Copilot/ECS that allows access to applications based on combinations of
 
