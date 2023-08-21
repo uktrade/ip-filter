@@ -229,7 +229,7 @@ class ConfigurationTestCase(unittest.TestCase):
         self.assertEqual(response.status, 403)
         self.assertNotIn("x-echo-header-connection", response.headers)
 
-    def test_ipfiler_enabled_and_path_is_in_protected_paths(self):
+    def test_ipfilter_enabled_and_path_is_in_protected_paths(self):
         self._setup_environment(
             (
                 ("COPILOT_ENVIRONMENT_NAME", "staging"),
