@@ -217,7 +217,7 @@ class ConfigurationTestCase(unittest.TestCase):
         response = self._make_request("/not-valid/public-test/")
         self.assertEqual(response.status, 403)
 
-    def test_ipfiler_enabled_and_path_is_not_in_public_paths(self):
+    def test_ipfilter_enabled_and_path_is_not_in_public_paths(self):
         self._setup_environment(
             (
                 ("COPILOT_ENVIRONMENT_NAME", "staging"),
