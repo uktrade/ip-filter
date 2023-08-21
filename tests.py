@@ -117,7 +117,7 @@ class EnvironTestCase(unittest.TestCase):
 
     def test_can_unset_env_var(self):
         """
-        Can a variable that is set globaly be unset with an environment level orderride:
+        Can a variable that is set globally be unset with an environment level override:
 
         PROTECTED_PATHS=/aaa,/bbb/,ccc
 
