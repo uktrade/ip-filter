@@ -45,7 +45,7 @@ class EnvironTestCase(unittest.TestCase):
             env.get_value("MISSING")
 
         with self.assertRaises(KeyError):
-            env.list("MINSSING")
+            env.list("MISSING")
 
         with self.assertRaises(KeyError):
             env.bool("MISSING")
