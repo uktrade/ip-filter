@@ -263,7 +263,7 @@ class ConfigurationTestCase(unittest.TestCase):
         # We aren't checking for log output as the log is emitted from another process so `TestCase.assertLogs` does not
         # capture them.
 
-        response = self._setup_environment(
+        self._setup_environment(
             (
                 ("COPILOT_ENVIRONMENT_NAME", "staging"),
                 ("IPFILTER_ENABLED", "True"),
@@ -289,7 +289,7 @@ class ConfigurationTestCase(unittest.TestCase):
 
         wait_until_connectable(2772)
 
-        response = self._setup_environment(
+        self._setup_environment(
             (
                 ("COPILOT_ENVIRONMENT_NAME", "staging"),
                 ("IPFILTER_ENABLED", "True"),
@@ -472,7 +472,7 @@ class ProxyTestCase(unittest.TestCase):
         self.addCleanup(create_origin(8081))
         wait_until_connectable(8080)
         wait_until_connectable(8081)
-        wait_until_connectable(8081)
+        wait_until_connectable(2772)
 
         method_statuses_expected = list(
             itertools.product(
