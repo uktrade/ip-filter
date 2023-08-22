@@ -963,7 +963,7 @@ class ProxyTestCase(unittest.TestCase):
         wait_until_connectable(8081)
         wait_until_connectable(2772)
 
-        # We make sure we don't depend or are thwarted by magic that an HTTP
+        # We make sure we don't depend on or are thwarted by magic that an HTTP
         # client in the tests does regarding multiple HTTP headers of the same
         # name, and specifically any handing of multiple Set-Cookie headers
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
