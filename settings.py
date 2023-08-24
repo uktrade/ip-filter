@@ -23,7 +23,7 @@ SERVER = env["SERVER"]
 APPCONFIG_URL = env.get("APPCONFIG_URL", "http://localhost:2772")
 
 EMAIL_NAME = env.get("EMAIL_NAME", "DBT")
-EMAIL = env.get("EMAIL", "sre-notify@digital.trade.gov.uk")
+EMAIL = env["EMAIL"]
 
 IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX = env.int(
     "IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", default=-1
