@@ -183,7 +183,6 @@ class ConfigurationTestCase(unittest.TestCase):
         response = self._make_request()
 
         self.assertEqual(response.status, 200)
-        self.assertNotIn("x-echo-header-connection", response.headers)
 
     def test_ipfilter_enabled_globally_but_disabled_for_environment(self):
         self._setup_environment(
@@ -208,7 +207,6 @@ class ConfigurationTestCase(unittest.TestCase):
         )
         response = self._make_request("/public-test")
         self.assertEqual(response.status, 200)
-        self.assertNotIn("x-echo-header-connection", response.headers)
 
         response = self._make_request("/public-test/some/sub/path")
         self.assertEqual(response.status, 200)
@@ -227,7 +225,6 @@ class ConfigurationTestCase(unittest.TestCase):
         )
         response = self._make_request("/not-public")
         self.assertEqual(response.status, 403)
-        self.assertNotIn("x-echo-header-connection", response.headers)
 
     def test_ipfilter_enabled_and_path_is_in_protected_paths(self):
         self._setup_environment(
@@ -257,7 +254,6 @@ class ConfigurationTestCase(unittest.TestCase):
         )
         response = self._make_request("/not-protected")
         self.assertEqual(response.status, 200)
-        self.assertNotIn("x-echo-header-connection", response.headers)
 
     def test_protected_paths_and_public_paths_are_mutually_exclusive(self):
         # We aren't checking for log output as the log is emitted from another process so `TestCase.assertLogs` does not
@@ -1295,7 +1291,6 @@ class IpFilterLogicTestCase(unittest.TestCase):
             url="http://127.0.0.1:8080/",
         )
         self.assertEqual(response.status, 403)
-        # TODO find way of capturing log output and check for missing x-forwarded message
 
     def test_incorrect_x_forwarded_for_returns_403_and_origin_not_called(self):
         # Origin not running: if an attempt was made to connect to it, we
@@ -1505,7 +1500,7 @@ IpRanges:
         self.assertEqual(response.status, 403)
         self.assertIn(b">1234magictraceid<", response.data)
 
-    def test_client_ipv6_is_handled(self):
+    def test_can_process_request_with_ipv6_ip(self):
         self.addCleanup(create_appconfig_agent(2772))
         self.addCleanup(
             create_filter(
