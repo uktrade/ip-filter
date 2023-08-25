@@ -1,0 +1,10 @@
+version: 0.2
+
+env:
+    variables:
+      ECR_VISIBILITY: PUBLIC
+
+phases:
+  build:
+    commands:
+        - /work/build.sh
