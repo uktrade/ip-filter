@@ -1607,16 +1607,12 @@ def create_origin(port):
         num_bytes = int(request.headers["x-chunked-num-bytes"])
 
         def data():
-            chunk = b"-"
-            for _ in range(0, num_bytes):
-                yield hex(len(chunk))[2:].encode() + b"\r\n" + chunk + b"\r\n"
-            yield b"0\r\n\r\n"
+            chunk = b"-" * num_bytes
+            yield chunk
 
+        # transfer-encoding: chunked is set by the Flask server
         return Response(
             data(),
-            headers=[
-                ("transfer-encoding", "chunked"),
-            ],
             status=200,
         )
 
