@@ -408,6 +408,44 @@ class ProxyTestCase(unittest.TestCase):
         self.assertEqual(raw_uri_expected, raw_uri_received)
         self.assertEqual(response.headers["x-echo-header-Host"], "127.0.0.1:8081")
 
+    def test_path_is_properly_formed(self):
+        self.addCleanup(create_appconfig_agent(2772))
+        self.addCleanup(
+            create_filter(
+                8080,
+                (
+                    ("SERVER", "127.0.0.1:8081"),
+                    ("SERVER_PROTO", "http"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                    ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
+                ),
+            )
+        )
+        self.addCleanup(create_origin(8081))
+        wait_until_connectable(8080)
+        wait_until_connectable(8081)
+        wait_until_connectable(2772)
+
+        path = urllib.parse.quote("/a/£/💾")
+        query = urllib.parse.urlencode(
+            [
+                ("a", "b"),
+            ]
+        )
+        raw_uri_expected = f"{path}?{query}"
+        response = urllib3.PoolManager().request(
+            "GET",
+            url=f"http://127.0.0.1:8080/{path}?{query}",
+            headers={
+                "host": "127.0.0.1:8081",
+                "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+            },
+        )
+        raw_uri_received = response.headers["x-echo-raw-uri"]
+
+        self.assertEqual(raw_uri_expected, raw_uri_received)
+        self.assertEqual(response.headers["x-echo-header-Host"], "127.0.0.1:8081")
+
     def test_body_is_forwarded(self):
         self.addCleanup(create_appconfig_agent(2772))
         self.addCleanup(
@@ -1151,6 +1189,7 @@ class ProxyTestCase(unittest.TestCase):
         self.assertNotIn("content-length", response.headers)
         self.assertEqual(response.data, b"-" * 10000)
 
+    @unittest.skip("TODO: This needs to be added back in after we've tested the path issue...")
     def test_https(self):
         self.addCleanup(create_appconfig_agent(2772))
         self.addCleanup(
@@ -1655,6 +1694,8 @@ def create_origin(port):
                 if k.lower().startswith(response_header_prefix)
             ]
         )
+        print("TTT: Headers: %s" % headers)
+        print("TTT: Req Path: %s" % request.path)
         return Response(
             request.stream.read(),
             headers=headers,

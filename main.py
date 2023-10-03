@@ -142,9 +142,11 @@ def handle_request(u_path):
                 break
             yield contents
 
+    logger.info(f"TTT: Request: url: {request.url}; path: {request.path}; full_path: {request.full_path}")
+    logger.info(request.headers)
     origin_response = http.request(
         request.method,
-        request.url,
+        request.full_path,
         headers={
             k: v for k, v in request.headers if k.lower() not in headers_to_remove
         },
