@@ -1189,14 +1189,13 @@ class ProxyTestCase(unittest.TestCase):
         self.assertNotIn("content-length", response.headers)
         self.assertEqual(response.data, b"-" * 10000)
 
-    @unittest.skip("TODO: This needs to be added back in after we've tested the path issue...")
     def test_https(self):
         self.addCleanup(create_appconfig_agent(2772))
         self.addCleanup(
             create_filter(
                 8080,
                 (
-                    ("SERVER", "www.google.com"),
+                    ("SERVER", "www.gov.uk"),
                     ("SERVER_PROTO", "https"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
@@ -1216,13 +1215,13 @@ class ProxyTestCase(unittest.TestCase):
                 "GET",
                 url="http://127.0.0.1:8080/",
                 headers={
-                    "host": "www.google.com",
+                    "host": "www.gov.uk",
                     "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
                 },
             )
             .data
         )
-        self.assertIn(b"<title>https://www.google.com/</title>", data)
+        self.assertIn(b'GOV.UK', data)
 
     def test_https_origin_not_exist_returns_500(self):
         self.addCleanup(create_appconfig_agent(2772))
@@ -1694,8 +1693,7 @@ def create_origin(port):
                 if k.lower().startswith(response_header_prefix)
             ]
         )
-        print("TTT: Headers: %s" % headers)
-        print("TTT: Req Path: %s" % request.path)
+
         return Response(
             request.stream.read(),
             headers=headers,
