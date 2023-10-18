@@ -35,7 +35,7 @@ pyyaml==6.0
     #   -r requirements_test.in
 smart-open==6.3.0
     # via -r requirements_test.in
-urllib3==1.26.5
+urllib3==1.26.18
     # via -r requirements.in
 werkzeug==2.3.7
     # via flask
