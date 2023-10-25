@@ -37,7 +37,7 @@ smart-open==6.3.0
     # via -r requirements_test.in
 urllib3==1.26.5
     # via -r requirements.in
-werkzeug==2.3.7
+werkzeug==3.0.1
     # via flask
 
 # The following packages are considered to be unsafe in a requirements file:
