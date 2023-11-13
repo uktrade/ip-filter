@@ -101,7 +101,7 @@ BasicAuth:
 
 Basic auth enables automated testing tools such as Browserstack to bypass the IP whitelist. This is only on non production automated testing environments where it isn't possible to whitelist the IP range of the testing service.
 
-If multiple basic auth configurations are provided, then the IP Filter ensures that at least the basic auth credentials supplied in the request authenticate against at least onf the configurations.
+If multiple basic auth configurations are provided, then the IP Filter ensures that at least the basic auth credentials supplied in the request authenticate against at least one of the configurations.
 
 Shared token:
 

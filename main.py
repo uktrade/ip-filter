@@ -8,6 +8,7 @@ from random import choices
 import urllib3
 
 from config import get_ipfilter_config
+from utils import constant_time_is_equal
 
 from flask import Flask
 
@@ -123,8 +124,79 @@ def handle_request(u_path):
             ip_address(client_ip) in ip_network(ip_range)
             for ip_range in ip_filter_rules["ips"]
         )
-
+        
+        ip_ok = [
+            any(
+                ip_address(client_ip) in ip_network(ip_range)
+                for ip_range in ip_filter_rules["ips"]
+            )
+            for i, route in enumerate(ip_filter_rules["ips"])
+        ]
+        
+        def verify_credentials(app_auth: dict) -> bool:
+            return constant_time_is_equal(app_auth["Username"].encode(), request.authorization.username.encode()) and constant_time_is_equal(app_auth["Password"].encode(), request.authorization.password.encode())
+        
         # TODO: reintroduce shared token and basic auth checks
+        
+        basic_auths = ip_filter_rules["auth"]
+        basic_auths_ok = [
+            [
+                request.authorization
+                and constant_time_is_equal(
+                    basic_auth["USERNAME"].encode(), request.authorization.username.encode()
+                )
+                and constant_time_is_equal(
+                    basic_auth["PASSWORD"].encode(), request.authorization.password.encode()
+                )
+                for basic_auth in basic_auths[i]
+            ]
+            for i, _ in enumerate(ip_filter_rules["ips"])
+        ]
+        on_auth_path_and_ok = [
+            [
+                basic_auths_ok[i][j]
+                for j, basic_auth in enumerate(basic_auths[i])
+                if forwarded_url.path == basic_auth["AUTHENTICATE_PATH"]
+            ]
+            for i, _ in enumerate(ip_filter_rules["ips"])
+        ]
+        any_on_auth_path_and_ok = any(
+            [any(on_auth_path_and_ok[i]) for i, _ in enumerate(ip_filter_rules["ips"])]
+        )
+        should_request_auth = not any_on_auth_path_and_ok and any(
+            (
+                ip_ok[i]
+                and len(on_auth_path_and_ok[i])
+                and all(not ok for ok in on_auth_path_and_ok[i])
+            )
+            for i, _ in enumerate(ip_filter_rules["ips"])
+        )
+        should_respond_ok_to_auth_request = any(
+            (
+                ip_ok[i]
+                and len(on_auth_path_and_ok[i])
+                and any(on_auth_path_and_ok[i])
+            )
+            for i, _ in enumerate(ip_filter_rules["ips"])
+        )
+        any_route_with_all_checks_passed = any(
+            (
+                ip_ok[i]
+                and (not basic_auths[i] or any(basic_auths_ok[i]))
+            )
+            for i, _ in enumerate(ip_filter_rules["ips"])
+        )
+        if should_request_auth:
+            return Response(
+            "Could not verify your access level for that URL.\n"
+            "You have to login with proper credentials",
+            401,
+            {"WWW-Authenticate": 'Basic realm="Login Required"'},
+        )
+
+        if should_respond_ok_to_auth_request:
+            return "ok"
+        
         all_checks_passed = ip_in_whitelist
 
         if not all_checks_passed:

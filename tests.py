@@ -1375,6 +1375,8 @@ class IpFilterLogicTestCase(unittest.TestCase):
                     "mytest:env:iplist": """
 IpRanges:
   - 1.2.3.4/32
+BasicAuth:
+  - []
 """
                 },
             )
@@ -1430,6 +1432,8 @@ IpRanges:
                     "testapp:testenv:testconfig2": """
 IpRanges:
     - 1.2.3.0/24
+BasicAuth:
+    - []
 """
                 },
             )
@@ -1504,6 +1508,8 @@ IpRanges:
                     "testapp:testenv:testconfig2": """
 IpRanges:
     - 1.2.3.4/32
+BasicAuth:
+    - []
 """
                 },
             )
@@ -1715,6 +1721,8 @@ def create_appconfig_agent(port, config_map=None):
         "testapp:testenv:testconfig": """
 IpRanges:
   - 1.1.1.1/32
+BasicAuth:
+  - []
 """
     }
 
