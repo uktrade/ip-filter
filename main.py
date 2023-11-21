@@ -69,9 +69,9 @@ def handle_request(u_path):
 
     logger.info("[%s] Start", request_id)
 
-    forwarded_url = request.url
+    forwarded_url = request.path
     logger.info("[%s] Forwarded URL: %s", request_id, forwarded_url)
-    parsed_url = urllib.parse.urlsplit(forwarded_url)
+    # parsed_url = urllib.parse.urlsplit(forwarded_url)
     
     # Find x-forwarded-for
     try:
@@ -139,10 +139,10 @@ def handle_request(u_path):
         
         basic_auths = ip_filter_rules["auth"]
         basic_auths_ok = [verify_credentials(auth) for auth in basic_auths]
-    
+        
         on_auth_path_and_ok = []
         for i, basic_auth_ok in enumerate(basic_auths_ok):
-            if basic_auths[i]["Path"] == parsed_url.path:
+            if basic_auths[i]["Path"] == forwarded_url:
                 on_auth_path_and_ok.append(basic_auth_ok)
         
         any_on_auth_path_and_ok = any(on_auth_path_and_ok)
@@ -163,7 +163,7 @@ def handle_request(u_path):
             return "ok"
         
         all_checks_passed = ip_in_whitelist and (not any(basic_auths) or any(basic_auths_ok))
-        breakpoint()
+        
         if not all_checks_passed:
             logger.warning("[%s] Request blocked for %s", request_id, client_ip)
             return render_access_denied(client_ip, forwarded_url, request_id)

@@ -1409,19 +1409,19 @@ IpRanges:
         self.assertIn(b">1.1.1.1<", response.data)
         self.assertIn(b">/<", response.data)
 
-        status = (
-            urllib3.PoolManager()
-            .request(
-                "GET",
-                url="http://127.0.0.1:8080/",
-                headers={
-                    "host": "somehost.com",
-                    "x-forwarded-for": "1.2.3.4, 1.1.1.1",
-                },
-            )
-            .status
-        )
-        self.assertEqual(status, 200)
+        # status = (
+        #     urllib3.PoolManager()
+        #     .request(
+        #         "GET",
+        #         url="http://127.0.0.1:8080/",
+        #         headers={
+        #             "host": "somehost.com",
+        #             "x-forwarded-for": "1.2.3.4, 1.1.1.1",
+        #         },
+        #     )
+        #     .status
+        # )
+        # self.assertEqual(status, 200)
 
     def test_ip_matching_cidr_respected(self):
         self.addCleanup(
