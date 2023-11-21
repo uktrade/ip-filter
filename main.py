@@ -6,6 +6,7 @@ import string
 from flask import request, Response, render_template
 from random import choices
 import urllib3
+import urllib.parse
 
 from config import get_ipfilter_config
 from utils import constant_time_is_equal
@@ -46,6 +47,11 @@ def render_access_denied(client_ip, forwarded_url, request_id):
         403,
     )
 
+# ROUTES oldstyle
+# [{'HOSTNAME_REGEX': '^somehost\\.com$', 'IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX': '-3', 'BASIC_AUTH': [{'AUTHENTICATE_PATH': '/__some_path', 'PASSWORD': 'my-secret', 'USERNAME': 'my-user'}], 'IP_RANGES': ['1.2.3.4/32']}]
+
+# New format
+# {'ips': ['1.2.3.4/32'], 'auth': [{'Path': '/__some_path', 'Username': 'my-user', 'Password': 'my-secret'}], 'shared_token': None}
 
 @app.route(
     "/",
@@ -63,9 +69,10 @@ def handle_request(u_path):
 
     logger.info("[%s] Start", request_id)
 
-    forwarded_url = request.path
+    forwarded_url = request.url
     logger.info("[%s] Forwarded URL: %s", request_id, forwarded_url)
-
+    parsed_url = urllib.parse.urlsplit(forwarded_url)
+    
     # Find x-forwarded-for
     try:
         x_forwarded_for = request.headers["X-Forwarded-For"]
@@ -125,67 +132,25 @@ def handle_request(u_path):
             for ip_range in ip_filter_rules["ips"]
         )
         
-        ip_ok = [
-            any(
-                ip_address(client_ip) in ip_network(ip_range)
-                for ip_range in ip_filter_rules["ips"]
-            )
-            for i, route in enumerate(ip_filter_rules["ips"])
-        ]
-        
         def verify_credentials(app_auth: dict) -> bool:
-            return constant_time_is_equal(app_auth["Username"].encode(), request.authorization.username.encode()) and constant_time_is_equal(app_auth["Password"].encode(), request.authorization.password.encode())
+            return request.authorization and constant_time_is_equal(app_auth["Username"].encode(), request.authorization.username.encode()) and constant_time_is_equal(app_auth["Password"].encode(), request.authorization.password.encode())
         
-        # TODO: reintroduce shared token and basic auth checks
+        # TODO: reintroduce shared token check
         
         basic_auths = ip_filter_rules["auth"]
-        basic_auths_ok = [
-            [
-                request.authorization
-                and constant_time_is_equal(
-                    basic_auth["USERNAME"].encode(), request.authorization.username.encode()
-                )
-                and constant_time_is_equal(
-                    basic_auth["PASSWORD"].encode(), request.authorization.password.encode()
-                )
-                for basic_auth in basic_auths[i]
-            ]
-            for i, _ in enumerate(ip_filter_rules["ips"])
-        ]
-        on_auth_path_and_ok = [
-            [
-                basic_auths_ok[i][j]
-                for j, basic_auth in enumerate(basic_auths[i])
-                if forwarded_url.path == basic_auth["AUTHENTICATE_PATH"]
-            ]
-            for i, _ in enumerate(ip_filter_rules["ips"])
-        ]
-        any_on_auth_path_and_ok = any(
-            [any(on_auth_path_and_ok[i]) for i, _ in enumerate(ip_filter_rules["ips"])]
-        )
-        should_request_auth = not any_on_auth_path_and_ok and any(
-            (
-                ip_ok[i]
-                and len(on_auth_path_and_ok[i])
-                and all(not ok for ok in on_auth_path_and_ok[i])
-            )
-            for i, _ in enumerate(ip_filter_rules["ips"])
-        )
-        should_respond_ok_to_auth_request = any(
-            (
-                ip_ok[i]
-                and len(on_auth_path_and_ok[i])
-                and any(on_auth_path_and_ok[i])
-            )
-            for i, _ in enumerate(ip_filter_rules["ips"])
-        )
-        any_route_with_all_checks_passed = any(
-            (
-                ip_ok[i]
-                and (not basic_auths[i] or any(basic_auths_ok[i]))
-            )
-            for i, _ in enumerate(ip_filter_rules["ips"])
-        )
+        basic_auths_ok = [verify_credentials(auth) for auth in basic_auths]
+    
+        on_auth_path_and_ok = []
+        for i, basic_auth_ok in enumerate(basic_auths_ok):
+            if basic_auths[i]["Path"] == parsed_url.path:
+                on_auth_path_and_ok.append(basic_auth_ok)
+        
+        any_on_auth_path_and_ok = any(on_auth_path_and_ok)
+        
+        should_request_auth = not any_on_auth_path_and_ok and (ip_in_whitelist and len(on_auth_path_and_ok) and all(not ok for ok in on_auth_path_and_ok))
+    
+        should_respond_ok_to_auth_request = any_on_auth_path_and_ok and ip_in_whitelist and len(on_auth_path_and_ok)
+        
         if should_request_auth:
             return Response(
             "Could not verify your access level for that URL.\n"
@@ -197,7 +162,7 @@ def handle_request(u_path):
         if should_respond_ok_to_auth_request:
             return "ok"
         
-        all_checks_passed = ip_in_whitelist
+        all_checks_passed = ip_in_whitelist and (not any(basic_auths) or any(basic_auths_ok))
 
         if not all_checks_passed:
             logger.warning("[%s] Request blocked for %s", request_id, client_ip)
