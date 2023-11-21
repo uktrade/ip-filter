@@ -163,7 +163,7 @@ def handle_request(u_path):
             return "ok"
         
         all_checks_passed = ip_in_whitelist and (not any(basic_auths) or any(basic_auths_ok))
-
+        breakpoint()
         if not all_checks_passed:
             logger.warning("[%s] Request blocked for %s", request_id, client_ip)
             return render_access_denied(client_ip, forwarded_url, request_id)
