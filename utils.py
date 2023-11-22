@@ -1,4 +1,3 @@
-
 def constant_time_is_equal(a, b):
     if len(a) != len(b):
         return False

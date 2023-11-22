@@ -1,10 +1,5 @@
+import base64
 import gzip
-from multiprocess import (
-    Process,
-)
-from io import (
-    BytesIO,
-)
 import itertools
 import os
 import signal
@@ -15,20 +10,16 @@ import time
 import unittest
 import urllib.parse
 import uuid
+from io import BytesIO
 
-from flask import (
-    abort,
-    Flask,
-    Response,
-    request,
-)
 import urllib3
-from werkzeug.routing import (
-    Rule,
-)
-from werkzeug.serving import (
-    WSGIRequestHandler,
-)
+from flask import Flask
+from flask import Response
+from flask import abort
+from flask import request
+from multiprocess import Process
+from werkzeug.routing import Rule
+from werkzeug.serving import WSGIRequestHandler
 
 from config import Environ
 
@@ -1221,7 +1212,7 @@ class ProxyTestCase(unittest.TestCase):
             )
             .data
         )
-        self.assertIn(b'GOV.UK', data)
+        self.assertIn(b"GOV.UK", data)
 
     def test_https_origin_not_exist_returns_500(self):
         self.addCleanup(create_appconfig_agent(2772))
@@ -1430,6 +1421,7 @@ IpRanges:
                     "testapp:testenv:testconfig2": """
 IpRanges:
     - 1.2.3.0/24
+BasicAuth: []
 """
                 },
             )
@@ -1504,6 +1496,7 @@ IpRanges:
                     "testapp:testenv:testconfig2": """
 IpRanges:
     - 1.2.3.4/32
+BasicAuth: []
 """
                 },
             )
@@ -1568,6 +1561,360 @@ IpRanges:
             .status
         )
         self.assertEqual(status, 403)
+
+
+class BasicAuthTestCase(unittest.TestCase):
+    """Tests covering basic auth responses."""
+
+    def get_basic_auth_response(
+        self,
+        host="somehost.com",
+        request_path=None,
+        x_forwarded_for="1.2.3.4, 1.1.1.1, 1.1.1.1",
+        credentials=b"my-user:my-secret",
+    ):
+        return urllib3.PoolManager().request(
+            "GET",
+            url=f"http://127.0.0.1:8080/{request_path}",
+            headers={
+                "host": host,
+                "x-forwarded-for": x_forwarded_for,
+                "authorization": "Basic "
+                + base64.b64encode(credentials).decode("utf-8"),
+            },
+        )
+
+    def test_basic_auth_header_respected(self):
+        """
+        Tests four requests each with whitelisted ip in x-forwarded-for header:
+        1. No auth path in url, returns 200.
+        2. No auth path in url, invalid password, returns 403: generic access denied.
+        3. Auth path in url, invalid password, returns 401: "Login required".
+        4. Auth path in url, valid user and password, returns 200.
+        """
+        self.addCleanup(
+            create_appconfig_agent(
+                2772,
+                {
+                    "testapp:testenv:testconfig2": """
+IpRanges:
+    - 1.2.3.4/32
+BasicAuth:
+    - Path: /__some_path
+      Username: my-user
+      Password: my-secret
+"""
+                },
+            )
+        )
+        self.addCleanup(
+            create_filter(
+                8080,
+                (
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                    ("APPCONFIG_PROFILES", "testapp:testenv:testconfig2"),
+                    ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3"),
+                ),
+            )
+        )
+        self.addCleanup(create_origin(8081))
+        wait_until_connectable(8080)
+        wait_until_connectable(8081)
+        wait_until_connectable(2772)
+
+        status = self.get_basic_auth_response().status
+
+        self.assertEqual(status, 200)
+
+        status = self.get_basic_auth_response(credentials=b"my-user:my-mangos").status
+
+        self.assertEqual(status, 403)
+
+        response = self.get_basic_auth_response(
+            request_path="__some_path", credentials=b"my-user:my-mangos"
+        )
+
+        self.assertEqual(response.status, 401)
+        self.assertEqual(
+            response.headers["WWW-Authenticate"], 'Basic realm="Login Required"'
+        )
+
+        response = self.get_basic_auth_response(request_path="__some_path")
+
+        self.assertEqual(response.status, 200)
+        self.assertEqual(response.data, b"ok")
+        self.assertNotIn("WWW-Authenticate", response.headers)
+
+    def test_basic_auth_second_cred_set_same_path_respected(self):
+        """Tests that:
+        1. 403 generic access denied message is returned for invalid password when auth path doesn't match request for my-user credentials.
+        2. 403 generic access denied message is returned for invalid password when auth path doesn't match request for my-other-user credentials.
+        3. 200 is returned when auth headers and path match second set of credentials (my-other-user).
+        """
+        self.addCleanup(
+            create_appconfig_agent(
+                2772,
+                {
+                    "testapp:testenv:testconfig2": """
+IpRanges:
+    - 1.2.3.4/32
+BasicAuth:
+    - Path: /__some_path
+      Username: my-user
+      Password: my-secret
+    - Path: /__some_path
+      Username: my-other-user
+      Password: my-other-secret
+"""
+                },
+            )
+        )
+        self.addCleanup(
+            create_filter(
+                8080,
+                (
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                    ("APPCONFIG_PROFILES", "testapp:testenv:testconfig2"),
+                    ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3"),
+                ),
+            )
+        )
+
+        self.addCleanup(create_origin(8081))
+        wait_until_connectable(8080)
+        wait_until_connectable(8081)
+        wait_until_connectable(2772)
+
+        status = self.get_basic_auth_response(credentials=b"my-user:my-mangos").status
+
+        self.assertEqual(status, 403)
+
+        status = self.get_basic_auth_response(
+            credentials=b"my-other-user:my-other-mangos"
+        ).status
+
+        self.assertEqual(status, 403)
+
+        response = self.get_basic_auth_response(
+            request_path="__some_path", credentials=b"my-other-user:my-other-secret"
+        )
+
+        self.assertEqual(response.status, 200)
+        self.assertEqual(response.data, b"ok")
+
+    def test_basic_auth_second_cred_set_different_path_respected(self):
+        """Tests that:
+        1. 403 generic access denied message is returned for invalid password when auth path doesn't match request for my-user credentials.
+        2. 403 generic access denied message is returned for invalid password when auth path doesn't match request for my-other-user credentials.
+        3. 200 ok returned when auth headers and path match first set of credentials (my-user).
+        4. 401 returned when invalid password header on matching path for first set of credentials (my-user).
+        5. 200 ok returned when auth headers and path match second set of credentials (my-other-user).
+        6. 401 returned when invalid password header on matching path for second set of credentials (my-other-user).
+        7. 200 returned when valid user / password, but no matching path for second set of credentials (my-other-user).
+        """
+        self.addCleanup(
+            create_appconfig_agent(
+                2772,
+                {
+                    "testapp:testenv:testconfig2": """
+IpRanges:
+    - 1.2.3.4/32
+BasicAuth:
+    - Path: /__some_path
+      Username: my-user
+      Password: my-secret
+    - Path: /__some_other_path
+      Username: my-other-user
+      Password: my-other-secret
+"""
+                },
+            )
+        )
+        self.addCleanup(
+            create_filter(
+                8080,
+                (
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                    ("APPCONFIG_PROFILES", "testapp:testenv:testconfig2"),
+                    ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3"),
+                ),
+            )
+        )
+        self.addCleanup(create_origin(8081))
+        wait_until_connectable(8080)
+        wait_until_connectable(8081)
+
+        status = self.get_basic_auth_response(credentials=b"my-user:my-mangos").status
+
+        self.assertEqual(status, 403)
+
+        status = self.get_basic_auth_response(
+            credentials=b"my-other-user:my-other-mangos"
+        ).status
+
+        self.assertEqual(status, 403)
+
+        response = self.get_basic_auth_response(request_path="__some_path")
+
+        self.assertEqual(response.status, 200)
+        self.assertEqual(response.data, b"ok")
+
+        response = self.get_basic_auth_response(
+            request_path="__some_path", credentials=b"my-user:my-mangos"
+        )
+
+        self.assertEqual(response.status, 401)
+
+        response = self.get_basic_auth_response(
+            request_path="__some_other_path",
+            credentials=b"my-other-user:my-other-secret",
+        )
+
+        self.assertEqual(response.status, 200)
+        self.assertEqual(response.data, b"ok")
+
+        response = self.get_basic_auth_response(
+            request_path="__some_other_path",
+            credentials=b"my-other-user:my-other-mangos",
+        )
+
+        self.assertEqual(response.status, 401)
+
+        status = self.get_basic_auth_response(
+            credentials=b"my-other-user:my-other-secret"
+        ).status
+
+        self.assertEqual(status, 200)
+
+    def test_basic_auth_second_route_respected(self):
+        """
+        Test that while auth path doesn't match request:
+        1. 403 returned for valid basic auth credentials when ip not whitelisted.
+        2. 403 returned for first set of invalid basic auth credentials when ip is whitelisted.
+        3. 403 returned for second set of invalid basic auth credentials when ip is whitelisted.
+        4. 200 returned for second set of valid basic auth credentials when ip is whitelisted.
+        """
+        self.addCleanup(
+            create_appconfig_agent(
+                2772,
+                {
+                    "testapp:testenv:testconfig2": """
+IpRanges:
+    - 1.2.3.4/32
+BasicAuth:
+    - Path: /__some_path
+      Username: my-user
+      Password: my-secret
+    - Path: /__some_path
+      Username: my-other-user
+      Password: my-other-secret
+"""
+                },
+            )
+        )
+        self.addCleanup(
+            create_filter(
+                8080,
+                (
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                    ("APPCONFIG_PROFILES", "testapp:testenv:testconfig2"),
+                    ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3"),
+                ),
+            )
+        )
+
+        self.addCleanup(create_origin(8081))
+        wait_until_connectable(8080)
+        wait_until_connectable(8081)
+
+        status = self.get_basic_auth_response(
+            x_forwarded_for="5.5.5.5, 1.1.1.1, 1.1.1.1"
+        ).status
+
+        self.assertEqual(status, 403)
+
+        status = self.get_basic_auth_response(credentials=b"my-user:my-mangos").status
+
+        self.assertEqual(status, 403)
+
+        status = self.get_basic_auth_response(
+            credentials=b"my-other-user:my-other-mangos"
+        ).status
+
+        self.assertEqual(status, 403)
+
+        status = self.get_basic_auth_response(
+            credentials=b"my-other-user:my-other-secret"
+        ).status
+
+        self.assertEqual(status, 200)
+
+    def test_basic_auth_second_route_same_path_respected(self):
+        """
+        Test that:
+        1. 403 returned for first set of invalid credentials where path doesn't match request.
+        2. 403 returned for second set of invalid credentials where path doesn't match request.
+        3. 200 ok returned for second set of valid credentials with matching path.
+        """
+        self.addCleanup(
+            create_appconfig_agent(
+                2772,
+                {
+                    "testapp:testenv:testconfig2": """
+IpRanges:
+    - 1.2.3.4/32
+BasicAuth:
+    - Path: /__some_path
+      Username: my-user
+      Password: my-secret
+    - Path: /__some_path
+      Username: my-other-user
+      Password: my-other-secret
+"""
+                },
+            )
+        )
+        self.addCleanup(
+            create_filter(
+                8080,
+                (
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                    ("APPCONFIG_PROFILES", "testapp:testenv:testconfig2"),
+                    ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3"),
+                ),
+            )
+        )
+
+        self.addCleanup(create_origin(8081))
+        wait_until_connectable(8080)
+        wait_until_connectable(8081)
+
+        status = self.get_basic_auth_response(credentials=b"my-user:my-mangos").status
+
+        self.assertEqual(status, 403)
+
+        status = self.get_basic_auth_response(
+            credentials=b"my-other-user:my-other-mangos"
+        ).status
+
+        self.assertEqual(status, 403)
+
+        response = self.get_basic_auth_response(
+            request_path="__some_path", credentials=b"my-other-user:my-other-secret"
+        )
+
+        self.assertEqual(response.status, 200)
+        self.assertEqual(response.data, b"ok")
 
 
 def create_filter(port, env=()):
@@ -1715,6 +2062,7 @@ def create_appconfig_agent(port, config_map=None):
         "testapp:testenv:testconfig": """
 IpRanges:
   - 1.1.1.1/32
+BasicAuth: []
 """
     }
 

@@ -1,6 +1,6 @@
 from collections import UserDict
-
 from urllib.parse import urljoin
+
 import urllib3
 import yaml
 
@@ -85,13 +85,15 @@ def get_appconfig_configuration(appconfig_path):
 def get_ipfilter_config(appconfig_paths):
     """Retreive a list of app config configurations and combine them into a single dict."""
     ips = []
+    auth = []
     for config_path in appconfig_paths:
         config = get_appconfig_configuration(config_path)
 
         ips.extend(config.get("IpRanges", []))
+        auth.extend(config.get("BasicAuth", []))
 
     return {
         "ips": ips,
-        "auth": None,
+        "auth": auth,
         "shared_token": None,
     }
