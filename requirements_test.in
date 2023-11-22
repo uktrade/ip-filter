@@ -3,6 +3,7 @@
 coverage
 jinja2
 multiprocess
+pre-commit
 pyyaml
 smart-open
 
