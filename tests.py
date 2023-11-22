@@ -1680,6 +1680,11 @@ BasicAuth:
         
 
     def test_basic_auth_second_cred_set_same_path_respected(self):
+        """Tests that:
+        1. 403 generic access denied message is returned for invalid password when auth path doesn't match request for my-user credentials.
+        2. 403 generic access denied message is returned for invalid password when auth path doesn't match request for my-other-user credentials.
+        3. 200 is returned when auth headers and path match second set of credentials (my-other-user).
+        """
         self.addCleanup(
             create_appconfig_agent(
                 2772,
@@ -1764,6 +1769,15 @@ BasicAuth:
         self.assertEqual(response.data, b"ok")
 
     def test_basic_auth_second_cred_set_different_path_respected(self):
+        """Tests that:
+        1. 403 generic access denied message is returned for invalid password when auth path doesn't match request for my-user credentials.
+        2. 403 generic access denied message is returned for invalid password when auth path doesn't match request for my-other-user credentials.
+        3. 200 ok returned when auth headers and path match first set of credentials (my-user).
+        4. 401 returned when invalid password header on matching path for first set of credentials (my-user).
+        5. 200 ok returned when auth headers and path match second set of credentials (my-other-user).
+        6. 401 returned when invalid password header on matching path for second set of credentials (my-other-user).
+        7. 200 returned when valid user / password, but no matching path for second set of credentials (my-other-user).
+        """
         self.addCleanup(
             create_appconfig_agent(
                 2772,
@@ -1901,6 +1915,13 @@ BasicAuth:
         self.assertEqual(status, 200)
 
     def test_basic_auth_second_route_respected(self):
+        """
+        Test that while auth path doesn't match request:
+        1. 403 returned for valid basic auth credentials when ip not whitelisted.
+        2. 403 returned for first set of invalid basic auth credentials when ip is whitelisted.
+        3. 403 returned for second set of invalid basic auth credentials when ip is whitelisted.
+        4. 200 returned for second set of valid basic auth credentials when ip is whitelisted.
+        """
         self.addCleanup(
             create_appconfig_agent(
                 2772,
@@ -2005,6 +2026,12 @@ BasicAuth:
         self.assertEqual(status, 200)
 
     def test_basic_auth_second_route_same_path_respected(self):
+        """
+        Test that:
+        1. 403 returned for first set of invalid credentials where path doesn't match request.
+        2. 403 returned for second set of invalid credentials where path doesn't match request.
+        3. 200 ok returned for second set of valid credentials with matching path.
+        """
         self.addCleanup(
             create_appconfig_agent(
                 2772,

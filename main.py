@@ -46,11 +46,6 @@ def render_access_denied(client_ip, forwarded_url, request_id):
         403,
     )
 
-# ROUTES oldstyle
-# [{'HOSTNAME_REGEX': '^somehost\\.com$', 'IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX': '-3', 'BASIC_AUTH': [{'AUTHENTICATE_PATH': '/__some_path', 'PASSWORD': 'my-secret', 'USERNAME': 'my-user'}], 'IP_RANGES': ['1.2.3.4/32']}]
-
-# New format
-# {'ips': ['1.2.3.4/32'], 'auth': [{'Path': '/__some_path', 'Username': 'my-user', 'Password': 'my-secret'}], 'shared_token': None}
 
 @app.route(
     "/",
@@ -70,7 +65,6 @@ def handle_request(u_path):
 
     forwarded_url = request.path
     logger.info("[%s] Forwarded URL: %s", request_id, forwarded_url)
-    # parsed_url = urllib.parse.urlsplit(forwarded_url)
     
     # Find x-forwarded-for
     try:
@@ -139,6 +133,7 @@ def handle_request(u_path):
         basic_auths = ip_filter_rules["auth"]
         basic_auths_ok = [verify_credentials(auth) for auth in basic_auths]
         
+        # Add boolean values from basic_auths_ok to new list, if basic auth path matches current request path
         on_auth_path_and_ok = []
         for i, basic_auth_ok in enumerate(basic_auths_ok):
             if basic_auths[i]["Path"] == forwarded_url:
@@ -146,6 +141,7 @@ def handle_request(u_path):
         
         any_on_auth_path_and_ok = any(on_auth_path_and_ok)
         
+        # Valid basic auth username and password were supplied, but basic auth path doesn't match request url
         should_request_auth = not any_on_auth_path_and_ok and (ip_in_whitelist and len(on_auth_path_and_ok) and all(not ok for ok in on_auth_path_and_ok))
     
         should_respond_ok_to_auth_request = any_on_auth_path_and_ok and ip_in_whitelist and len(on_auth_path_and_ok)
