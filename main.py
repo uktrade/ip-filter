@@ -6,7 +6,6 @@ import string
 from flask import request, Response, render_template
 from random import choices
 import urllib3
-import urllib.parse
 
 from config import get_ipfilter_config
 from utils import constant_time_is_equal

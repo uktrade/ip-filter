@@ -1679,381 +1679,413 @@ BasicAuth:
         self.assertNotIn("WWW-Authenticate", response.headers)
         
 
-#     def test_basic_auth_second_cred_set_same_path_respected(self):
-#         self.addCleanup(
-#             create_appconfig_agent(
-#                 2772,
-#                 {
-#                     "testapp:testenv:testconfig2": """
-# IpRanges:
-#     - 1.2.3.4/32
-# BasicAuth:
-#     - - Path: /__some_path
-#         Username: my-user
-#         Password: my-secret
-#       - Path: /__some_path
-#         Username: my-other-user
-#         Password: my-other-secret
-# """
-#                 },
-#             )
-#         )
-#         self.addCleanup(
-#             create_filter(
-#                 8080,
-#                 (
-#                     ("SERVER", "localhost:8081"),
-#                     ("SERVER_PROTO", "http"),
-#                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
-#                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig2"),
-#                     ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3")
-#                 ),
-#             )
-#         )
+    def test_basic_auth_second_cred_set_same_path_respected(self):
+        self.addCleanup(
+            create_appconfig_agent(
+                2772,
+                {
+                    "testapp:testenv:testconfig2": """
+IpRanges:
+    - 1.2.3.4/32
+BasicAuth:
+    - Path: /__some_path
+      Username: my-user
+      Password: my-secret
+    - Path: /__some_path
+      Username: my-other-user
+      Password: my-other-secret
+"""
+                },
+            )
+        )
+        self.addCleanup(
+            create_filter(
+                8080,
+                (
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                    ("APPCONFIG_PROFILES", "testapp:testenv:testconfig2"),
+                    ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3")
+                ),
+            )
+        )
         
-#         self.addCleanup(create_origin(8081))
-#         wait_until_connectable(8080)
-#         wait_until_connectable(8081)
-#         wait_until_connectable(2772)
+        self.addCleanup(create_origin(8081))
+        wait_until_connectable(8080)
+        wait_until_connectable(8081)
+        wait_until_connectable(2772)
 
-#         # status = (
-#         #     urllib3.PoolManager()
-#         #     .request(
-#         #         "GET",
-#         #         url="http://127.0.0.1:8080/",
-#         #         headers={
-#         #             "x-cf-forwarded-url": "http://somehost.com/",
-#         #             "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-#         #             "authorization": "Basic "
-#         #             + base64.b64encode(b"my-user:my-mangos").decode("utf-8"),
-#         #         },
-#         #     )
-#         #     .status
-#         # )
-#         # self.assertEqual(status, 403)
+        status = (
+            urllib3.PoolManager()
+            .request(
+                "GET",
+                url="http://127.0.0.1:8080/",
+                headers={
+                    "host": "somehost.com",
+                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+                    "authorization": "Basic "
+                    + base64.b64encode(b"my-user:my-mangos").decode("utf-8"),
+                },
+            )
+            .status
+        )
+        self.assertEqual(status, 403)
 
-#         # status = (
-#         #     urllib3.PoolManager()
-#         #     .request(
-#         #         "GET",
-#         #         url="http://127.0.0.1:8080/",
-#         #         headers={
-#         #             "x-cf-forwarded-url": "http://somehost.com/",
-#         #             "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-#         #             "authorization": "Basic "
-#         #             + base64.b64encode(b"my-other-user:my-other-mangos").decode(
-#         #                 "utf-8"
-#         #             ),
-#         #         },
-#         #     )
-#         #     .status
-#         # )
-#         # self.assertEqual(status, 403)
+        status = (
+            urllib3.PoolManager()
+            .request(
+                "GET",
+                url="http://127.0.0.1:8080/",
+                headers={
+                    "host": "somehost.com",
+                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+                    "authorization": "Basic "
+                    + base64.b64encode(b"my-other-user:my-other-mangos").decode(
+                        "utf-8"
+                    ),
+                },
+            )
+            .status
+        )
+        self.assertEqual(status, 403)
 
-#         response = urllib3.PoolManager().request(
-#             "GET",
-#             url="http://127.0.0.1:8080/",
-#             headers={
-#                 "x-cf-forwarded-url": "http://somehost.com/__some_path",
-#                 "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-#                 "authorization": "Basic "
-#                 + base64.b64encode(b"my-other-user:my-other-secret").decode("utf-8"),
-#             },
-#         )
-#         self.assertEqual(response.status, 200)
-#         self.assertEqual(response.data, b"ok")
+        response = urllib3.PoolManager().request(
+            "GET",
+            url="http://127.0.0.1:8080/__some_path",
+            headers={
+                "host": "somehost.com",
+                "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+                "authorization": "Basic "
+                + base64.b64encode(b"my-other-user:my-other-secret").decode("utf-8"),
+            },
+        )
+        self.assertEqual(response.status, 200)
+        self.assertEqual(response.data, b"ok")
 
-#     def test_basic_auth_second_cred_set_different_path_respected(self):
-#         self.addCleanup(
-#             create_filter(
-#                 8080,
-#                 (
-#                     ("ORIGIN_HOSTNAME", "localhost:8081"),
-#                     ("ROUTES__1__IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3"),
-#                     ("ROUTES__1__IP_RANGES__1", "1.2.3.4/32"),
-#                     ("ROUTES__1__HOSTNAME_REGEX", r"^somehost\.com$"),
-#                     ("ROUTES__1__BASIC_AUTH__1__USERNAME", "my-user"),
-#                     ("ROUTES__1__BASIC_AUTH__1__PASSWORD", "my-secret"),
-#                     ("ROUTES__1__BASIC_AUTH__1__AUTHENTICATE_PATH", "/__some_path"),
-#                     ("ROUTES__1__BASIC_AUTH__2__USERNAME", "my-other-user"),
-#                     ("ROUTES__1__BASIC_AUTH__2__PASSWORD", "my-other-secret"),
-#                     (
-#                         "ROUTES__1__BASIC_AUTH__2__AUTHENTICATE_PATH",
-#                         "/__some_other_path",
-#                     ),
-#                 ),
-#             )
-#         )
-#         self.addCleanup(create_origin(8081))
-#         wait_until_connectable(8080)
-#         wait_until_connectable(8081)
+    def test_basic_auth_second_cred_set_different_path_respected(self):
+        self.addCleanup(
+            create_appconfig_agent(
+                2772,
+                {
+                    "testapp:testenv:testconfig2": """
+IpRanges:
+    - 1.2.3.4/32
+BasicAuth:
+    - Path: /__some_path
+      Username: my-user
+      Password: my-secret
+    - Path: /__some_other_path
+      Username: my-other-user
+      Password: my-other-secret
+"""
+                },
+            )
+        )
+        self.addCleanup(
+            create_filter(
+                8080,
+                (
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                    ("APPCONFIG_PROFILES", "testapp:testenv:testconfig2"),
+                    ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3")
+                ),
+            )
+        )
+        self.addCleanup(create_origin(8081))
+        wait_until_connectable(8080)
+        wait_until_connectable(8081)
 
-#         status = (
-#             urllib3.PoolManager()
-#             .request(
-#                 "GET",
-#                 url="http://127.0.0.1:8080/",
-#                 headers={
-#                     "x-cf-forwarded-url": "http://somehost.com/",
-#                     "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-#                     "authorization": "Basic "
-#                     + base64.b64encode(b"my-user:my-mangos").decode("utf-8"),
-#                 },
-#             )
-#             .status
-#         )
-#         self.assertEqual(status, 403)
+        status = (
+            urllib3.PoolManager()
+            .request(
+                "GET",
+                url="http://127.0.0.1:8080/",
+                headers={
+                    "host": "somehost.com",
+                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+                    "authorization": "Basic "
+                    + base64.b64encode(b"my-user:my-mangos").decode("utf-8"),
+                },
+            )
+            .status
+        )
+        self.assertEqual(status, 403)
 
-#         status = (
-#             urllib3.PoolManager()
-#             .request(
-#                 "GET",
-#                 url="http://127.0.0.1:8080/",
-#                 headers={
-#                     "x-cf-forwarded-url": "http://somehost.com/",
-#                     "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-#                     "authorization": "Basic "
-#                     + base64.b64encode(b"my-other-user:my-other-mangos").decode(
-#                         "utf-8"
-#                     ),
-#                 },
-#             )
-#             .status
-#         )
-#         self.assertEqual(status, 403)
+        status = (
+            urllib3.PoolManager()
+            .request(
+                "GET",
+                url="http://127.0.0.1:8080/",
+                headers={
+                    "host": "somehost.com",
+                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+                    "authorization": "Basic "
+                    + base64.b64encode(b"my-other-user:my-other-mangos").decode(
+                        "utf-8"
+                    ),
+                },
+            )
+            .status
+        )
+        self.assertEqual(status, 403)
 
-#         response = urllib3.PoolManager().request(
-#             "GET",
-#             url="http://127.0.0.1:8080/",
-#             headers={
-#                 "x-cf-forwarded-url": "http://somehost.com/__some_path",
-#                 "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-#                 "authorization": "Basic "
-#                 + base64.b64encode(b"my-user:my-secret").decode("utf-8"),
-#             },
-#         )
-#         self.assertEqual(response.status, 200)
-#         self.assertEqual(response.data, b"ok")
+        response = urllib3.PoolManager().request(
+            "GET",
+            url="http://127.0.0.1:8080/__some_path",
+            headers={
+                "host": "somehost.com",
+                "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+                "authorization": "Basic "
+                + base64.b64encode(b"my-user:my-secret").decode("utf-8"),
+            },
+        )
+        self.assertEqual(response.status, 200)
+        self.assertEqual(response.data, b"ok")
 
-#         response = urllib3.PoolManager().request(
-#             "GET",
-#             url="http://127.0.0.1:8080/",
-#             headers={
-#                 "x-cf-forwarded-url": "http://somehost.com/__some_path",
-#                 "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-#                 "authorization": "Basic "
-#                 + base64.b64encode(b"my-user:my-mangos").decode("utf-8"),
-#             },
-#         )
-#         self.assertEqual(response.status, 401)
+        response = urllib3.PoolManager().request(
+            "GET",
+            url="http://127.0.0.1:8080/__some_path",
+            headers={
+                "host": "somehost.com",
+                "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+                "authorization": "Basic "
+                + base64.b64encode(b"my-user:my-mangos").decode("utf-8"),
+            },
+        )
+        self.assertEqual(response.status, 401)
 
-#         response = urllib3.PoolManager().request(
-#             "GET",
-#             url="http://127.0.0.1:8080/",
-#             headers={
-#                 "x-cf-forwarded-url": "http://somehost.com/__some_other_path",
-#                 "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-#                 "authorization": "Basic "
-#                 + base64.b64encode(b"my-other-user:my-other-secret").decode("utf-8"),
-#             },
-#         )
-#         self.assertEqual(response.status, 200)
-#         self.assertEqual(response.data, b"ok")
+        response = urllib3.PoolManager().request(
+            "GET",
+            url="http://127.0.0.1:8080/__some_other_path",
+            headers={
+                "host": "somehost.com",
+                "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+                "authorization": "Basic "
+                + base64.b64encode(b"my-other-user:my-other-secret").decode("utf-8"),
+            },
+        )
+        self.assertEqual(response.status, 200)
+        self.assertEqual(response.data, b"ok")
 
-#         response = urllib3.PoolManager().request(
-#             "GET",
-#             url="http://127.0.0.1:8080/",
-#             headers={
-#                 "x-cf-forwarded-url": "http://somehost.com/__some_other_path",
-#                 "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-#                 "authorization": "Basic "
-#                 + base64.b64encode(b"my-other-user:my-other-mangos").decode("utf-8"),
-#             },
-#         )
-#         self.assertEqual(response.status, 401)
+        response = urllib3.PoolManager().request(
+            "GET",
+            url="http://127.0.0.1:8080/__some_other_path",
+            headers={
+                "host": "somehost.com",
+                "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+                "authorization": "Basic "
+                + base64.b64encode(b"my-other-user:my-other-mangos").decode("utf-8"),
+            },
+        )
+        self.assertEqual(response.status, 401)
 
-#         status = (
-#             urllib3.PoolManager()
-#             .request(
-#                 "GET",
-#                 url="http://127.0.0.1:8080/",
-#                 headers={
-#                     "x-cf-forwarded-url": "http://somehost.com/",
-#                     "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-#                     "authorization": "Basic "
-#                     + base64.b64encode(b"my-other-user:my-other-secret").decode(
-#                         "utf-8"
-#                     ),
-#                 },
-#             )
-#             .status
-#         )
-#         self.assertEqual(status, 200)
+        status = (
+            urllib3.PoolManager()
+            .request(
+                "GET",
+                url="http://127.0.0.1:8080/",
+                headers={
+                    "host": "somehost.com",
+                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+                    "authorization": "Basic "
+                    + base64.b64encode(b"my-other-user:my-other-secret").decode(
+                        "utf-8"
+                    ),
+                },
+            )
+            .status
+        )
+        self.assertEqual(status, 200)
 
-#     def test_basic_auth_second_route_respected(self):
-#         self.addCleanup(
-#             create_filter(
-#                 8080,
-#                 (
-#                     ("ORIGIN_HOSTNAME", "localhost:8081"),
-#                     ("ROUTES__1__IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3"),
-#                     ("ROUTES__1__IP_RANGES__1", "1.2.3.4/32"),
-#                     ("ROUTES__1__HOSTNAME_REGEX", r"^somehost\.com$"),
-#                     ("ROUTES__1__BASIC_AUTH__1__USERNAME", "my-user"),
-#                     ("ROUTES__1__BASIC_AUTH__1__PASSWORD", "my-secret"),
-#                     ("ROUTES__1__BASIC_AUTH__1__AUTHENTICATE_PATH", "/__some_path"),
-#                     ("ROUTES__2__IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3"),
-#                     ("ROUTES__2__IP_RANGES__1", "1.2.3.4/32"),
-#                     ("ROUTES__2__HOSTNAME_REGEX", r"^somehost\.com$"),
-#                     ("ROUTES__2__BASIC_AUTH__1__USERNAME", "my-other-user"),
-#                     ("ROUTES__2__BASIC_AUTH__1__PASSWORD", "my-other-secret"),
-#                     ("ROUTES__2__BASIC_AUTH__1__AUTHENTICATE_PATH", "/__some_path"),
-#                 ),
-#             )
-#         )
-#         self.addCleanup(create_origin(8081))
-#         wait_until_connectable(8080)
-#         wait_until_connectable(8081)
+    def test_basic_auth_second_route_respected(self):
+        self.addCleanup(
+            create_appconfig_agent(
+                2772,
+                {
+                    "testapp:testenv:testconfig2": """
+IpRanges:
+    - 1.2.3.4/32
+BasicAuth:
+    - Path: /__some_path
+      Username: my-user
+      Password: my-secret
+    - Path: /__some_path
+      Username: my-other-user
+      Password: my-other-secret
+"""
+                },
+            )
+        )
+        self.addCleanup(
+            create_filter(
+                8080,
+                (
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                    ("APPCONFIG_PROFILES", "testapp:testenv:testconfig2"),
+                    ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3")
+                ),
+            )
+        )
+    
+        self.addCleanup(create_origin(8081))
+        wait_until_connectable(8080)
+        wait_until_connectable(8081)
 
-#         status = (
-#             urllib3.PoolManager()
-#             .request(
-#                 "GET",
-#                 url="http://127.0.0.1:8080/",
-#                 headers={
-#                     "x-cf-forwarded-url": "http://somehost.com/",
-#                     "x-forwarded-for": "5.5.5.5, 1.1.1.1, 1.1.1.1",
-#                     "authorization": "Basic "
-#                     + base64.b64encode(b"my-user:my-secret").decode("utf-8"),
-#                 },
-#             )
-#             .status
-#         )
-#         self.assertEqual(status, 403)
+        status = (
+            urllib3.PoolManager()
+            .request(
+                "GET",
+                url="http://127.0.0.1:8080/",
+                headers={
+                    "host": "somehost.com",
+                    "x-forwarded-for": "5.5.5.5, 1.1.1.1, 1.1.1.1",
+                    "authorization": "Basic "
+                    + base64.b64encode(b"my-user:my-secret").decode("utf-8"),
+                },
+            )
+            .status
+        )
+        self.assertEqual(status, 403)
 
-#         status = (
-#             urllib3.PoolManager()
-#             .request(
-#                 "GET",
-#                 url="http://127.0.0.1:8080/",
-#                 headers={
-#                     "x-cf-forwarded-url": "http://somehost.com/",
-#                     "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-#                     "authorization": "Basic "
-#                     + base64.b64encode(b"my-user:my-mangos").decode("utf-8"),
-#                 },
-#             )
-#             .status
-#         )
-#         self.assertEqual(status, 403)
+        status = (
+            urllib3.PoolManager()
+            .request(
+                "GET",
+                url="http://127.0.0.1:8080/",
+                headers={
+                    "host": "somehost.com",
+                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+                    "authorization": "Basic "
+                    + base64.b64encode(b"my-user:my-mangos").decode("utf-8"),
+                },
+            )
+            .status
+        )
+        self.assertEqual(status, 403)
 
-#         status = (
-#             urllib3.PoolManager()
-#             .request(
-#                 "GET",
-#                 url="http://127.0.0.1:8080/",
-#                 headers={
-#                     "x-cf-forwarded-url": "http://somehost.com/",
-#                     "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-#                     "authorization": "Basic "
-#                     + base64.b64encode(b"my-other-user:my-other-mangos").decode(
-#                         "utf-8"
-#                     ),
-#                 },
-#             )
-#             .status
-#         )
-#         self.assertEqual(status, 403)
+        status = (
+            urllib3.PoolManager()
+            .request(
+                "GET",
+                url="http://127.0.0.1:8080/",
+                headers={
+                    "host": "somehost.com",
+                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+                    "authorization": "Basic "
+                    + base64.b64encode(b"my-other-user:my-other-mangos").decode(
+                        "utf-8"
+                    ),
+                },
+            )
+            .status
+        )
+        self.assertEqual(status, 403)
 
-#         status = (
-#             urllib3.PoolManager()
-#             .request(
-#                 "GET",
-#                 url="http://127.0.0.1:8080/",
-#                 headers={
-#                     "x-cf-forwarded-url": "http://somehost.com/",
-#                     "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-#                     "authorization": "Basic "
-#                     + base64.b64encode(b"my-other-user:my-other-secret").decode(
-#                         "utf-8"
-#                     ),
-#                 },
-#             )
-#             .status
-#         )
-#         self.assertEqual(status, 200)
+        status = (
+            urllib3.PoolManager()
+            .request(
+                "GET",
+                url="http://127.0.0.1:8080/",
+                headers={
+                    "host": "somehost.com",
+                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+                    "authorization": "Basic "
+                    + base64.b64encode(b"my-other-user:my-other-secret").decode(
+                        "utf-8"
+                    ),
+                },
+            )
+            .status
+        )
+        self.assertEqual(status, 200)
 
-#     def test_basic_auth_second_route_same_path_respected(self):
-#         self.addCleanup(
-#             create_filter(
-#                 8080,
-#                 (
-#                     ("ORIGIN_HOSTNAME", "localhost:8081"),
-#                     ("ROUTES__1__IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3"),
-#                     ("ROUTES__1__IP_RANGES__1", "1.2.3.4/32"),
-#                     ("ROUTES__1__HOSTNAME_REGEX", r"^somehost\.com$"),
-#                     ("ROUTES__1__BASIC_AUTH__1__USERNAME", "my-user"),
-#                     ("ROUTES__1__BASIC_AUTH__1__PASSWORD", "my-secret"),
-#                     ("ROUTES__1__BASIC_AUTH__1__AUTHENTICATE_PATH", "/__some_path"),
-#                     ("ROUTES__2__IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3"),
-#                     ("ROUTES__2__IP_RANGES__1", "1.2.3.4/32"),
-#                     ("ROUTES__2__HOSTNAME_REGEX", r"^somehost\.com$"),
-#                     ("ROUTES__2__BASIC_AUTH__2__USERNAME", "my-other-user"),
-#                     ("ROUTES__2__BASIC_AUTH__2__PASSWORD", "my-other-secret"),
-#                     ("ROUTES__2__BASIC_AUTH__2__AUTHENTICATE_PATH", "/__some_path"),
-#                 ),
-#             )
-#         )
-#         self.addCleanup(create_origin(8081))
-#         wait_until_connectable(8080)
-#         wait_until_connectable(8081)
+    def test_basic_auth_second_route_same_path_respected(self):
+        self.addCleanup(
+            create_appconfig_agent(
+                2772,
+                {
+                    "testapp:testenv:testconfig2": """
+IpRanges:
+    - 1.2.3.4/32
+BasicAuth:
+    - Path: /__some_path
+      Username: my-user
+      Password: my-secret
+    - Path: /__some_path
+      Username: my-other-user
+      Password: my-other-secret
+"""
+                },
+            )
+        )
+        self.addCleanup(
+            create_filter(
+                8080,
+                (
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                    ("APPCONFIG_PROFILES", "testapp:testenv:testconfig2"),
+                    ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3")
+                ),
+            )
+        )
+        
+        self.addCleanup(create_origin(8081))
+        wait_until_connectable(8080)
+        wait_until_connectable(8081)
 
-#         status = (
-#             urllib3.PoolManager()
-#             .request(
-#                 "GET",
-#                 url="http://127.0.0.1:8080/",
-#                 headers={
-#                     "x-cf-forwarded-url": "http://somehost.com/",
-#                     "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-#                     "authorization": "Basic "
-#                     + base64.b64encode(b"my-user:my-mangos").decode("utf-8"),
-#                 },
-#             )
-#             .status
-#         )
-#         self.assertEqual(status, 403)
+        status = (
+            urllib3.PoolManager()
+            .request(
+                "GET",
+                url="http://127.0.0.1:8080/",
+                headers={
+                    "host": "somehost.com",
+                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+                    "authorization": "Basic "
+                    + base64.b64encode(b"my-user:my-mangos").decode("utf-8"),
+                },
+            )
+            .status
+        )
+        self.assertEqual(status, 403)
 
-#         status = (
-#             urllib3.PoolManager()
-#             .request(
-#                 "GET",
-#                 url="http://127.0.0.1:8080/",
-#                 headers={
-#                     "x-cf-forwarded-url": "http://somehost.com/",
-#                     "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-#                     "authorization": "Basic "
-#                     + base64.b64encode(b"my-other-user:my-other-mangos").decode(
-#                         "utf-8"
-#                     ),
-#                 },
-#             )
-#             .status
-#         )
-#         self.assertEqual(status, 403)
+        status = (
+            urllib3.PoolManager()
+            .request(
+                "GET",
+                url="http://127.0.0.1:8080/",
+                headers={
+                    "host": "somehost.com",
+                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+                    "authorization": "Basic "
+                    + base64.b64encode(b"my-other-user:my-other-mangos").decode(
+                        "utf-8"
+                    ),
+                },
+            )
+            .status
+        )
+        self.assertEqual(status, 403)
 
-#         response = urllib3.PoolManager().request(
-#             "GET",
-#             url="http://127.0.0.1:8080/",
-#             headers={
-#                 "x-cf-forwarded-url": "http://somehost.com/__some_path",
-#                 "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-#                 "authorization": "Basic "
-#                 + base64.b64encode(b"my-other-user:my-other-secret").decode("utf-8"),
-#             },
-#         )
-#         self.assertEqual(response.status, 200)
-#         self.assertEqual(response.data, b"ok")
+        response = urllib3.PoolManager().request(
+            "GET",
+            url="http://127.0.0.1:8080/__some_path",
+            headers={
+                "host": "somehost.com",
+                "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+                "authorization": "Basic "
+                + base64.b64encode(b"my-other-user:my-other-secret").decode("utf-8"),
+            },
+        )
+        self.assertEqual(response.status, 200)
+        self.assertEqual(response.data, b"ok")
     
 def create_filter(port, env=()):
     def stop():
