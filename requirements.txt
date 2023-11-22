@@ -36,15 +36,15 @@ platformdirs==4.0.0
     # via virtualenv
 pre-commit==3.5.0
     # via -r requirements.in
-pyyaml==6.0
+pyyaml==6.0.1
     # via
     #   -r requirements.in
     #   pre-commit
-urllib3==1.26.5
+urllib3==1.26.18
     # via -r requirements.in
 virtualenv==20.24.7
     # via pre-commit
-werkzeug==2.3.7
+werkzeug==3.0.1
     # via flask
 
 # The following packages are considered to be unsafe in a requirements file:
