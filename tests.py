@@ -1,11 +1,5 @@
-import gzip
-from multiprocess import (
-    Process,
-)
-from io import (
-    BytesIO,
-)
 import base64
+import gzip
 import itertools
 import os
 import signal
@@ -16,20 +10,16 @@ import time
 import unittest
 import urllib.parse
 import uuid
+from io import BytesIO
 
-from flask import (
-    abort,
-    Flask,
-    Response,
-    request,
-)
 import urllib3
-from werkzeug.routing import (
-    Rule,
-)
-from werkzeug.serving import (
-    WSGIRequestHandler,
-)
+from flask import Flask
+from flask import Response
+from flask import abort
+from flask import request
+from multiprocess import Process
+from werkzeug.routing import Rule
+from werkzeug.serving import WSGIRequestHandler
 
 from config import Environ
 
@@ -1222,7 +1212,7 @@ class ProxyTestCase(unittest.TestCase):
             )
             .data
         )
-        self.assertIn(b'GOV.UK', data)
+        self.assertIn(b"GOV.UK", data)
 
     def test_https_origin_not_exist_returns_500(self):
         self.addCleanup(create_appconfig_agent(2772))
@@ -1607,7 +1597,7 @@ BasicAuth:
                     ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig2"),
-                    ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3")
+                    ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3"),
                 ),
             )
         )
@@ -1677,7 +1667,6 @@ BasicAuth:
         self.assertEqual(response.status, 200)
         self.assertEqual(response.data, b"ok")
         self.assertNotIn("WWW-Authenticate", response.headers)
-        
 
     def test_basic_auth_second_cred_set_same_path_respected(self):
         """Tests that:
@@ -1711,11 +1700,11 @@ BasicAuth:
                     ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig2"),
-                    ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3")
+                    ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3"),
                 ),
             )
         )
-        
+
         self.addCleanup(create_origin(8081))
         wait_until_connectable(8080)
         wait_until_connectable(8081)
@@ -1804,7 +1793,7 @@ BasicAuth:
                     ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig2"),
-                    ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3")
+                    ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3"),
                 ),
             )
         )
@@ -1948,11 +1937,11 @@ BasicAuth:
                     ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig2"),
-                    ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3")
+                    ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3"),
                 ),
             )
         )
-    
+
         self.addCleanup(create_origin(8081))
         wait_until_connectable(8080)
         wait_until_connectable(8081)
@@ -2058,11 +2047,11 @@ BasicAuth:
                     ("SERVER_PROTO", "http"),
                     ("COPILOT_ENVIRONMENT_NAME", "staging"),
                     ("APPCONFIG_PROFILES", "testapp:testenv:testconfig2"),
-                    ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3")
+                    ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3"),
                 ),
             )
         )
-        
+
         self.addCleanup(create_origin(8081))
         wait_until_connectable(8080)
         wait_until_connectable(8081)
@@ -2113,7 +2102,8 @@ BasicAuth:
         )
         self.assertEqual(response.status, 200)
         self.assertEqual(response.data, b"ok")
-    
+
+
 def create_filter(port, env=()):
     def stop():
         process.terminate()

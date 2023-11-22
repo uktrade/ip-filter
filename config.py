@@ -1,6 +1,6 @@
 from collections import UserDict
-
 from urllib.parse import urljoin
+
 import urllib3
 import yaml
 

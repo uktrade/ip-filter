@@ -1,18 +1,19 @@
-import sys
 import logging
-from ipaddress import ip_address, ip_network
 import string
-
-from flask import request, Response, render_template
+import sys
+from ipaddress import ip_address
+from ipaddress import ip_network
+from pathlib import Path
 from random import choices
+
 import urllib3
+from flask import Flask
+from flask import Response
+from flask import render_template
+from flask import request
 
 from config import get_ipfilter_config
 from utils import constant_time_is_equal
-
-from flask import Flask
-
-from pathlib import Path
 
 HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]
 
@@ -65,7 +66,7 @@ def handle_request(u_path):
 
     forwarded_url = request.path
     logger.info("[%s] Forwarded URL: %s", request_id, forwarded_url)
-    
+
     # Find x-forwarded-for
     try:
         x_forwarded_for = request.headers["X-Forwarded-For"]
@@ -124,41 +125,59 @@ def handle_request(u_path):
             ip_address(client_ip) in ip_network(ip_range)
             for ip_range in ip_filter_rules["ips"]
         )
-        
+
         def verify_credentials(app_auth: dict) -> bool:
-            return request.authorization and constant_time_is_equal(app_auth["Username"].encode(), request.authorization.username.encode()) and constant_time_is_equal(app_auth["Password"].encode(), request.authorization.password.encode())
-        
+            return (
+                request.authorization
+                and constant_time_is_equal(
+                    app_auth["Username"].encode(),
+                    request.authorization.username.encode(),
+                )
+                and constant_time_is_equal(
+                    app_auth["Password"].encode(),
+                    request.authorization.password.encode(),
+                )
+            )
+
         # TODO: reintroduce shared token check
-        
+
         basic_auths = ip_filter_rules["auth"]
         basic_auths_ok = [verify_credentials(auth) for auth in basic_auths]
-        
+
         # Add boolean values from basic_auths_ok to new list, if basic auth path matches current request path
         on_auth_path_and_ok = []
         for i, basic_auth_ok in enumerate(basic_auths_ok):
             if basic_auths[i]["Path"] == forwarded_url:
                 on_auth_path_and_ok.append(basic_auth_ok)
-        
+
         any_on_auth_path_and_ok = any(on_auth_path_and_ok)
-        
+
         # Valid basic auth username and password were supplied, but basic auth path doesn't match request url
-        should_request_auth = not any_on_auth_path_and_ok and (ip_in_whitelist and len(on_auth_path_and_ok) and all(not ok for ok in on_auth_path_and_ok))
-    
-        should_respond_ok_to_auth_request = any_on_auth_path_and_ok and ip_in_whitelist and len(on_auth_path_and_ok)
-        
+        should_request_auth = not any_on_auth_path_and_ok and (
+            ip_in_whitelist
+            and len(on_auth_path_and_ok)
+            and all(not ok for ok in on_auth_path_and_ok)
+        )
+
+        should_respond_ok_to_auth_request = (
+            any_on_auth_path_and_ok and ip_in_whitelist and len(on_auth_path_and_ok)
+        )
+
         if should_request_auth:
             return Response(
-            "Could not verify your access level for that URL.\n"
-            "You have to login with proper credentials",
-            401,
-            {"WWW-Authenticate": 'Basic realm="Login Required"'},
-        )
+                "Could not verify your access level for that URL.\n"
+                "You have to login with proper credentials",
+                401,
+                {"WWW-Authenticate": 'Basic realm="Login Required"'},
+            )
 
         if should_respond_ok_to_auth_request:
             return "ok"
-        
-        all_checks_passed = ip_in_whitelist and (not any(basic_auths) or any(basic_auths_ok))
-        
+
+        all_checks_passed = ip_in_whitelist and (
+            not any(basic_auths) or any(basic_auths_ok)
+        )
+
         if not all_checks_passed:
             logger.warning("[%s] Request blocked for %s", request_id, client_ip)
             return render_access_denied(client_ip, forwarded_url, request_id)
@@ -176,7 +195,7 @@ def handle_request(u_path):
 
     origin_response = http.request(
         request.method,
-        request.full_path, #  This should be request.full_path not request.url as the latter causes issues in some cases.
+        request.full_path,  #  This should be request.full_path not request.url as the latter causes issues in some cases.
         headers={
             k: v for k, v in request.headers if k.lower() not in headers_to_remove
         },
