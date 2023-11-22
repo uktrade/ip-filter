@@ -1399,19 +1399,19 @@ IpRanges:
         self.assertIn(b">1.1.1.1<", response.data)
         self.assertIn(b">/<", response.data)
 
-        # status = (
-        #     urllib3.PoolManager()
-        #     .request(
-        #         "GET",
-        #         url="http://127.0.0.1:8080/",
-        #         headers={
-        #             "host": "somehost.com",
-        #             "x-forwarded-for": "1.2.3.4, 1.1.1.1",
-        #         },
-        #     )
-        #     .status
-        # )
-        # self.assertEqual(status, 200)
+        status = (
+            urllib3.PoolManager()
+            .request(
+                "GET",
+                url="http://127.0.0.1:8080/",
+                headers={
+                    "host": "somehost.com",
+                    "x-forwarded-for": "1.2.3.4, 1.1.1.1",
+                },
+            )
+            .status
+        )
+        self.assertEqual(status, 200)
 
     def test_ip_matching_cidr_respected(self):
         self.addCleanup(
@@ -1566,6 +1566,24 @@ BasicAuth: []
 class BasicAuthTestCase(unittest.TestCase):
     """Tests covering basic auth responses."""
 
+    def get_basic_auth_response(
+        self,
+        host="somehost.com",
+        request_path=None,
+        x_forwarded_for="1.2.3.4, 1.1.1.1, 1.1.1.1",
+        credentials=b"my-user:my-secret",
+    ):
+        return urllib3.PoolManager().request(
+            "GET",
+            url=f"http://127.0.0.1:8080/{request_path}",
+            headers={
+                "host": host,
+                "x-forwarded-for": x_forwarded_for,
+                "authorization": "Basic "
+                + base64.b64encode(credentials).decode("utf-8"),
+            },
+        )
+
     def test_basic_auth_header_respected(self):
         """
         Tests four requests each with whitelisted ip in x-forwarded-for header:
@@ -1606,64 +1624,25 @@ BasicAuth:
         wait_until_connectable(8081)
         wait_until_connectable(2772)
 
-        status = (
-            urllib3.PoolManager()
-            .request(
-                "GET",
-                url="http://127.0.0.1:8080/",
-                headers={
-                    "host": "somehost.com",
-                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-                    "authorization": "Basic "
-                    + base64.b64encode(b"my-user:my-secret").decode("utf-8"),
-                },
-            )
-            .status
-        )
+        status = self.get_basic_auth_response().status
 
         self.assertEqual(status, 200)
 
-        status = (
-            urllib3.PoolManager()
-            .request(
-                "GET",
-                url="http://127.0.0.1:8080/",
-                headers={
-                    "host": "somehost.com",
-                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-                    "authorization": "Basic "
-                    + base64.b64encode(b"my-user:my-mangos").decode("utf-8"),
-                },
-            )
-            .status
-        )
+        status = self.get_basic_auth_response(credentials=b"my-user:my-mangos").status
+
         self.assertEqual(status, 403)
 
-        response = urllib3.PoolManager().request(
-            "GET",
-            url="http://127.0.0.1:8080/__some_path",
-            headers={
-                "host": "somehost.com",
-                "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-                "authorization": "Basic "
-                + base64.b64encode(b"my-user:my-mangos").decode("utf-8"),
-            },
+        response = self.get_basic_auth_response(
+            request_path="__some_path", credentials=b"my-user:my-mangos"
         )
+
         self.assertEqual(response.status, 401)
         self.assertEqual(
             response.headers["WWW-Authenticate"], 'Basic realm="Login Required"'
         )
 
-        response = urllib3.PoolManager().request(
-            "GET",
-            url="http://127.0.0.1:8080/__some_path",
-            headers={
-                "host": "somehost.com",
-                "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-                "authorization": "Basic "
-                + base64.b64encode(b"my-user:my-secret").decode("utf-8"),
-            },
-        )
+        response = self.get_basic_auth_response(request_path="__some_path")
+
         self.assertEqual(response.status, 200)
         self.assertEqual(response.data, b"ok")
         self.assertNotIn("WWW-Authenticate", response.headers)
@@ -1710,50 +1689,20 @@ BasicAuth:
         wait_until_connectable(8081)
         wait_until_connectable(2772)
 
-        status = (
-            urllib3.PoolManager()
-            .request(
-                "GET",
-                url="http://127.0.0.1:8080/",
-                headers={
-                    "host": "somehost.com",
-                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-                    "authorization": "Basic "
-                    + base64.b64encode(b"my-user:my-mangos").decode("utf-8"),
-                },
-            )
-            .status
-        )
+        status = self.get_basic_auth_response(credentials=b"my-user:my-mangos").status
+
         self.assertEqual(status, 403)
 
-        status = (
-            urllib3.PoolManager()
-            .request(
-                "GET",
-                url="http://127.0.0.1:8080/",
-                headers={
-                    "host": "somehost.com",
-                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-                    "authorization": "Basic "
-                    + base64.b64encode(b"my-other-user:my-other-mangos").decode(
-                        "utf-8"
-                    ),
-                },
-            )
-            .status
-        )
+        status = self.get_basic_auth_response(
+            credentials=b"my-other-user:my-other-mangos"
+        ).status
+
         self.assertEqual(status, 403)
 
-        response = urllib3.PoolManager().request(
-            "GET",
-            url="http://127.0.0.1:8080/__some_path",
-            headers={
-                "host": "somehost.com",
-                "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-                "authorization": "Basic "
-                + base64.b64encode(b"my-other-user:my-other-secret").decode("utf-8"),
-            },
+        response = self.get_basic_auth_response(
+            request_path="__some_path", credentials=b"my-other-user:my-other-secret"
         )
+
         self.assertEqual(response.status, 200)
         self.assertEqual(response.data, b"ok")
 
@@ -1801,106 +1750,46 @@ BasicAuth:
         wait_until_connectable(8080)
         wait_until_connectable(8081)
 
-        status = (
-            urllib3.PoolManager()
-            .request(
-                "GET",
-                url="http://127.0.0.1:8080/",
-                headers={
-                    "host": "somehost.com",
-                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-                    "authorization": "Basic "
-                    + base64.b64encode(b"my-user:my-mangos").decode("utf-8"),
-                },
-            )
-            .status
-        )
+        status = self.get_basic_auth_response(credentials=b"my-user:my-mangos").status
+
         self.assertEqual(status, 403)
 
-        status = (
-            urllib3.PoolManager()
-            .request(
-                "GET",
-                url="http://127.0.0.1:8080/",
-                headers={
-                    "host": "somehost.com",
-                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-                    "authorization": "Basic "
-                    + base64.b64encode(b"my-other-user:my-other-mangos").decode(
-                        "utf-8"
-                    ),
-                },
-            )
-            .status
-        )
+        status = self.get_basic_auth_response(
+            credentials=b"my-other-user:my-other-mangos"
+        ).status
+
         self.assertEqual(status, 403)
 
-        response = urllib3.PoolManager().request(
-            "GET",
-            url="http://127.0.0.1:8080/__some_path",
-            headers={
-                "host": "somehost.com",
-                "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-                "authorization": "Basic "
-                + base64.b64encode(b"my-user:my-secret").decode("utf-8"),
-            },
-        )
+        response = self.get_basic_auth_response(request_path="__some_path")
+
         self.assertEqual(response.status, 200)
         self.assertEqual(response.data, b"ok")
 
-        response = urllib3.PoolManager().request(
-            "GET",
-            url="http://127.0.0.1:8080/__some_path",
-            headers={
-                "host": "somehost.com",
-                "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-                "authorization": "Basic "
-                + base64.b64encode(b"my-user:my-mangos").decode("utf-8"),
-            },
+        response = self.get_basic_auth_response(
+            request_path="__some_path", credentials=b"my-user:my-mangos"
         )
+
         self.assertEqual(response.status, 401)
 
-        response = urllib3.PoolManager().request(
-            "GET",
-            url="http://127.0.0.1:8080/__some_other_path",
-            headers={
-                "host": "somehost.com",
-                "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-                "authorization": "Basic "
-                + base64.b64encode(b"my-other-user:my-other-secret").decode("utf-8"),
-            },
+        response = self.get_basic_auth_response(
+            request_path="__some_other_path",
+            credentials=b"my-other-user:my-other-secret",
         )
+
         self.assertEqual(response.status, 200)
         self.assertEqual(response.data, b"ok")
 
-        response = urllib3.PoolManager().request(
-            "GET",
-            url="http://127.0.0.1:8080/__some_other_path",
-            headers={
-                "host": "somehost.com",
-                "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-                "authorization": "Basic "
-                + base64.b64encode(b"my-other-user:my-other-mangos").decode("utf-8"),
-            },
+        response = self.get_basic_auth_response(
+            request_path="__some_other_path",
+            credentials=b"my-other-user:my-other-mangos",
         )
+
         self.assertEqual(response.status, 401)
 
-        status = (
-            urllib3.PoolManager()
-            .request(
-                "GET",
-                url="http://127.0.0.1:8080/",
-                headers={
-                    "host": "somehost.com",
-                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-                    "authorization": "Basic "
-                    + base64.b64encode(b"my-other-user:my-other-secret").decode(
-                        "utf-8"
-                    ),
-                },
-            )
-            .status
-        )
+        status = self.get_basic_auth_response(
+            credentials=b"my-other-user:my-other-secret"
+        ).status
+
         self.assertEqual(status, 200)
 
     def test_basic_auth_second_route_respected(self):
@@ -1946,72 +1835,26 @@ BasicAuth:
         wait_until_connectable(8080)
         wait_until_connectable(8081)
 
-        status = (
-            urllib3.PoolManager()
-            .request(
-                "GET",
-                url="http://127.0.0.1:8080/",
-                headers={
-                    "host": "somehost.com",
-                    "x-forwarded-for": "5.5.5.5, 1.1.1.1, 1.1.1.1",
-                    "authorization": "Basic "
-                    + base64.b64encode(b"my-user:my-secret").decode("utf-8"),
-                },
-            )
-            .status
-        )
+        status = self.get_basic_auth_response(
+            x_forwarded_for="5.5.5.5, 1.1.1.1, 1.1.1.1"
+        ).status
+
         self.assertEqual(status, 403)
 
-        status = (
-            urllib3.PoolManager()
-            .request(
-                "GET",
-                url="http://127.0.0.1:8080/",
-                headers={
-                    "host": "somehost.com",
-                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-                    "authorization": "Basic "
-                    + base64.b64encode(b"my-user:my-mangos").decode("utf-8"),
-                },
-            )
-            .status
-        )
+        status = self.get_basic_auth_response(credentials=b"my-user:my-mangos").status
+
         self.assertEqual(status, 403)
 
-        status = (
-            urllib3.PoolManager()
-            .request(
-                "GET",
-                url="http://127.0.0.1:8080/",
-                headers={
-                    "host": "somehost.com",
-                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-                    "authorization": "Basic "
-                    + base64.b64encode(b"my-other-user:my-other-mangos").decode(
-                        "utf-8"
-                    ),
-                },
-            )
-            .status
-        )
+        status = self.get_basic_auth_response(
+            credentials=b"my-other-user:my-other-mangos"
+        ).status
+
         self.assertEqual(status, 403)
 
-        status = (
-            urllib3.PoolManager()
-            .request(
-                "GET",
-                url="http://127.0.0.1:8080/",
-                headers={
-                    "host": "somehost.com",
-                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-                    "authorization": "Basic "
-                    + base64.b64encode(b"my-other-user:my-other-secret").decode(
-                        "utf-8"
-                    ),
-                },
-            )
-            .status
-        )
+        status = self.get_basic_auth_response(
+            credentials=b"my-other-user:my-other-secret"
+        ).status
+
         self.assertEqual(status, 200)
 
     def test_basic_auth_second_route_same_path_respected(self):
@@ -2056,50 +1899,20 @@ BasicAuth:
         wait_until_connectable(8080)
         wait_until_connectable(8081)
 
-        status = (
-            urllib3.PoolManager()
-            .request(
-                "GET",
-                url="http://127.0.0.1:8080/",
-                headers={
-                    "host": "somehost.com",
-                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-                    "authorization": "Basic "
-                    + base64.b64encode(b"my-user:my-mangos").decode("utf-8"),
-                },
-            )
-            .status
-        )
+        status = self.get_basic_auth_response(credentials=b"my-user:my-mangos").status
+
         self.assertEqual(status, 403)
 
-        status = (
-            urllib3.PoolManager()
-            .request(
-                "GET",
-                url="http://127.0.0.1:8080/",
-                headers={
-                    "host": "somehost.com",
-                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-                    "authorization": "Basic "
-                    + base64.b64encode(b"my-other-user:my-other-mangos").decode(
-                        "utf-8"
-                    ),
-                },
-            )
-            .status
-        )
+        status = self.get_basic_auth_response(
+            credentials=b"my-other-user:my-other-mangos"
+        ).status
+
         self.assertEqual(status, 403)
 
-        response = urllib3.PoolManager().request(
-            "GET",
-            url="http://127.0.0.1:8080/__some_path",
-            headers={
-                "host": "somehost.com",
-                "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-                "authorization": "Basic "
-                + base64.b64encode(b"my-other-user:my-other-secret").decode("utf-8"),
-            },
+        response = self.get_basic_auth_response(
+            request_path="__some_path", credentials=b"my-other-user:my-other-secret"
         )
+
         self.assertEqual(response.status, 200)
         self.assertEqual(response.data, b"ok")
 
