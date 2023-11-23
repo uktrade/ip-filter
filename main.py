@@ -126,6 +126,13 @@ def handle_request(u_path):
             for ip_range in ip_filter_rules["ips"]
         )
 
+        shared_tokens = ip_filter_rules["shared_tokens"]
+        shared_token_ok = [
+            shared_token["HeaderName"] in request.headers
+            and constant_time_is_equal(shared_token["Value"])
+            for shared_token in shared_tokens
+        ]
+
         def verify_credentials(app_auth: dict) -> bool:
             return (
                 request.authorization
@@ -155,12 +162,16 @@ def handle_request(u_path):
         # Valid basic auth username and password were supplied, but basic auth path doesn't match request url
         should_request_auth = not any_on_auth_path_and_ok and (
             ip_in_whitelist
+            and (not shared_tokens or any(shared_token_ok))
             and len(on_auth_path_and_ok)
             and all(not ok for ok in on_auth_path_and_ok)
         )
 
         should_respond_ok_to_auth_request = (
-            any_on_auth_path_and_ok and ip_in_whitelist and len(on_auth_path_and_ok)
+            any_on_auth_path_and_ok
+            and ip_in_whitelist
+            and (not shared_tokens or any(shared_token_ok))
+            and len(on_auth_path_and_ok)
         )
 
         if should_request_auth:
@@ -174,8 +185,10 @@ def handle_request(u_path):
         if should_respond_ok_to_auth_request:
             return "ok"
 
-        all_checks_passed = ip_in_whitelist and (
-            not any(basic_auths) or any(basic_auths_ok)
+        all_checks_passed = (
+            ip_in_whitelist
+            and (not shared_tokens or any(shared_token_ok))
+            and (not any(basic_auths) or any(basic_auths_ok))
         )
 
         if not all_checks_passed:

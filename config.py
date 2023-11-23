@@ -86,14 +86,16 @@ def get_ipfilter_config(appconfig_paths):
     """Retreive a list of app config configurations and combine them into a single dict."""
     ips = []
     auth = []
+    shared_tokens = []
     for config_path in appconfig_paths:
         config = get_appconfig_configuration(config_path)
 
         ips.extend(config.get("IpRanges", []))
         auth.extend(config.get("BasicAuth", []))
+        shared_tokens.extend(config.get("SharedToken", []))
 
     return {
         "ips": ips,
         "auth": auth,
-        "shared_token": None,
+        "shared_tokens": shared_tokens,
     }
