@@ -1918,6 +1918,18 @@ BasicAuth:
 
 
 class SharedTokenTestCase(unittest.TestCase):
+    def get_shared_token_response(self, custom_headers={"x-cdn-secret": "my-secret"}):
+        headers = {
+            "x-cf-forwarded-url": "http://somehost.com/",
+            "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+        } | custom_headers
+
+        return urllib3.PoolManager().request(
+            "GET",
+            url="http://127.0.0.1:8080/",
+            headers=headers,
+        )
+
     def test_shared_token_header_respected(self):
         self.addCleanup(
             create_appconfig_agent(
@@ -1949,48 +1961,18 @@ SharedToken:
         wait_until_connectable(8080)
         wait_until_connectable(8081)
 
-        status = (
-            urllib3.PoolManager()
-            .request(
-                "GET",
-                url="http://127.0.0.1:8080/",
-                headers={
-                    "x-cf-forwarded-url": "http://somehost.com/",
-                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-                },
-            )
-            .status
-        )
+        status = self.get_shared_token_response(custom_headers={}).status
+
         self.assertEqual(status, 403)
 
-        status = (
-            urllib3.PoolManager()
-            .request(
-                "GET",
-                url="http://127.0.0.1:8080/",
-                headers={
-                    "x-cf-forwarded-url": "http://somehost.com/",
-                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-                    "x-cdn-secret": "not-my-secret",
-                },
-            )
-            .status
-        )
+        status = self.get_shared_token_response(
+            custom_headers={"x-cdn-secret": "not-my-secret"}
+        ).status
+
         self.assertEqual(status, 403)
 
-        status = (
-            urllib3.PoolManager()
-            .request(
-                "GET",
-                url="http://127.0.0.1:8080/",
-                headers={
-                    "x-cf-forwarded-url": "http://somehost.com/",
-                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-                    "x-cdn-secret": "my-secret",
-                },
-            )
-            .status
-        )
+        status = self.get_shared_token_response().status
+
         self.assertEqual(status, 200)
 
     def test_second_shared_token_header_respected(self):
@@ -2026,34 +2008,16 @@ SharedToken:
         wait_until_connectable(8080)
         wait_until_connectable(8081)
 
-        status = (
-            urllib3.PoolManager()
-            .request(
-                "GET",
-                url="http://127.0.0.1:8080/",
-                headers={
-                    "x-cf-forwarded-url": "http://somehost.com/",
-                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-                    "x-cdn-secret": "my-mangos",
-                },
-            )
-            .status
-        )
+        status = self.get_shared_token_response(
+            custom_headers={"x-cdn-secret": "my-mangos"}
+        ).status
+
         self.assertEqual(status, 403)
 
-        status = (
-            urllib3.PoolManager()
-            .request(
-                "GET",
-                url="http://127.0.0.1:8080/",
-                headers={
-                    "x-cf-forwarded-url": "http://somehost.com/",
-                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-                    "x-cdn-secret": "my-other-secret",
-                },
-            )
-            .status
-        )
+        status = self.get_shared_token_response(
+            custom_headers={"x-cdn-secret": "my-other-secret"}
+        ).status
+
         self.assertEqual(status, 200)
 
     def test_shared_token_second_route_respected(self):
@@ -2089,34 +2053,16 @@ SharedToken:
         wait_until_connectable(8080)
         wait_until_connectable(8081)
 
-        status = (
-            urllib3.PoolManager()
-            .request(
-                "GET",
-                url="http://127.0.0.1:8080/",
-                headers={
-                    "x-cf-forwarded-url": "http://somehost.com/",
-                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-                    "x-cdn-secret": "my-mangos",
-                },
-            )
-            .status
-        )
+        status = self.get_shared_token_response(
+            custom_headers={"x-cdn-secret": "my-mangos"}
+        ).status
+
         self.assertEqual(status, 403)
 
-        status = (
-            urllib3.PoolManager()
-            .request(
-                "GET",
-                url="http://127.0.0.1:8080/",
-                headers={
-                    "x-cf-forwarded-url": "http://somehost.com/",
-                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-                    "x-cdn-secret": "my-other-secret",
-                },
-            )
-            .status
-        )
+        status = self.get_shared_token_response(
+            custom_headers={"x-cdn-secret": "my-other-secret"}
+        ).status
+
         self.assertEqual(status, 200)
 
     def test_shared_token_header_removed(self):
@@ -2152,16 +2098,13 @@ SharedToken:
         wait_until_connectable(8080)
         wait_until_connectable(8081)
 
-        response = urllib3.PoolManager().request(
-            "GET",
-            url="http://127.0.0.1:8080/",
-            headers={
-                "x-cf-forwarded-url": "http://somehost.com/",
-                "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+        response = self.get_shared_token_response(
+            custom_headers={
                 "x-cdn-secret": "my-mangos",
                 "x-shared-secret": "my-other-secret",
-            },
+            }
         )
+
         self.assertEqual(response.status, 200)
         self.assertNotIn("x-echo-header-x-shared-secret", response.headers)
         self.assertNotIn("x-echo-header-my-other-secret", response.headers)
