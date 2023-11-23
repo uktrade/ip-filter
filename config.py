@@ -92,7 +92,7 @@ def get_ipfilter_config(appconfig_paths):
 
         ips.extend(config.get("IpRanges", []))
         auth.extend(config.get("BasicAuth", []))
-        shared_tokens.extend(config.get("SharedToken", []))
+        shared_tokens.extend(config.get("SharedTokens", []))
 
     return {
         "ips": ips,

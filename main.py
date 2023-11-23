@@ -165,10 +165,12 @@ def handle_request(u_path):
             set(shared_token["HeaderName"].lower() for shared_token in shared_tokens)
         ) + ("connection",)
 
+        shared_token_checks_passed = not shared_tokens or any(shared_token_ok)
+
         # Valid basic auth username and password were supplied, but basic auth path doesn't match request url
         should_request_auth = not any_on_auth_path_and_ok and (
             ip_in_whitelist
-            and (not shared_tokens or any(shared_token_ok))
+            and shared_token_checks_passed
             and len(on_auth_path_and_ok)
             and all(not ok for ok in on_auth_path_and_ok)
         )
@@ -176,7 +178,7 @@ def handle_request(u_path):
         should_respond_ok_to_auth_request = (
             any_on_auth_path_and_ok
             and ip_in_whitelist
-            and (not shared_tokens or any(shared_token_ok))
+            and shared_token_checks_passed
             and len(on_auth_path_and_ok)
         )
 
@@ -191,10 +193,10 @@ def handle_request(u_path):
         if should_respond_ok_to_auth_request:
             return "ok"
 
+        basic_auth_checks_passed = not any(basic_auths) or any(basic_auths_ok)
+
         all_checks_passed = (
-            ip_in_whitelist
-            and (not shared_tokens or any(shared_token_ok))
-            and (not any(basic_auths) or any(basic_auths_ok))
+            ip_in_whitelist and shared_token_checks_passed and basic_auth_checks_passed
         )
 
         if not all_checks_passed:
