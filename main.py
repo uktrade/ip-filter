@@ -89,9 +89,6 @@ def handle_request(u_path):
         )
         return render_access_denied("Unknown", forwarded_url, request_id)
 
-    # TODO: The shared token header shoould also be removed.
-    headers_to_remove = ["connection"]
-
     protected_paths = app.config["PROTECTED_PATHS"]
     public_paths = app.config["PUBLIC_PATHS"]
 
@@ -118,6 +115,8 @@ def handle_request(u_path):
     ):
         ip_filter_enabled_and_required_for_path = False
 
+    headers_to_remove = []
+
     if ip_filter_enabled_and_required_for_path:
         ip_filter_rules = get_ipfilter_config(app.config["APPCONFIG_PROFILES"])
 
@@ -129,7 +128,10 @@ def handle_request(u_path):
         shared_tokens = ip_filter_rules["shared_tokens"]
         shared_token_ok = [
             shared_token["HeaderName"] in request.headers
-            and constant_time_is_equal(shared_token["Value"])
+            and constant_time_is_equal(
+                shared_token["Value"].encode(),
+                request.headers[shared_token["HeaderName"]].encode(),
+            )
             for shared_token in shared_tokens
         ]
 
@@ -158,6 +160,10 @@ def handle_request(u_path):
                 on_auth_path_and_ok.append(basic_auth_ok)
 
         any_on_auth_path_and_ok = any(on_auth_path_and_ok)
+
+        headers_to_remove = tuple(
+            set(shared_token["HeaderName"].lower() for shared_token in shared_tokens)
+        ) + ("connection",)
 
         # Valid basic auth username and password were supplied, but basic auth path doesn't match request url
         should_request_auth = not any_on_auth_path_and_ok and (

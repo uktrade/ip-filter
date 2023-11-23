@@ -1917,6 +1917,256 @@ BasicAuth:
         self.assertEqual(response.data, b"ok")
 
 
+class SharedTokenTestCase(unittest.TestCase):
+    def test_shared_token_header_respected(self):
+        self.addCleanup(
+            create_appconfig_agent(
+                2772,
+                {
+                    "testapp:testenv:testconfig2": """
+IpRanges:
+    - 1.2.3.4/32
+SharedToken:
+    - HeaderName: x-cdn-secret
+      Value: my-secret
+"""
+                },
+            )
+        )
+        self.addCleanup(
+            create_filter(
+                8080,
+                (
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                    ("APPCONFIG_PROFILES", "testapp:testenv:testconfig2"),
+                    ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3"),
+                ),
+            )
+        )
+        self.addCleanup(create_origin(8081))
+        wait_until_connectable(8080)
+        wait_until_connectable(8081)
+
+        status = (
+            urllib3.PoolManager()
+            .request(
+                "GET",
+                url="http://127.0.0.1:8080/",
+                headers={
+                    "x-cf-forwarded-url": "http://somehost.com/",
+                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+                },
+            )
+            .status
+        )
+        self.assertEqual(status, 403)
+
+        status = (
+            urllib3.PoolManager()
+            .request(
+                "GET",
+                url="http://127.0.0.1:8080/",
+                headers={
+                    "x-cf-forwarded-url": "http://somehost.com/",
+                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+                    "x-cdn-secret": "not-my-secret",
+                },
+            )
+            .status
+        )
+        self.assertEqual(status, 403)
+
+        status = (
+            urllib3.PoolManager()
+            .request(
+                "GET",
+                url="http://127.0.0.1:8080/",
+                headers={
+                    "x-cf-forwarded-url": "http://somehost.com/",
+                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+                    "x-cdn-secret": "my-secret",
+                },
+            )
+            .status
+        )
+        self.assertEqual(status, 200)
+
+    def test_second_shared_token_header_respected(self):
+        self.addCleanup(
+            create_appconfig_agent(
+                2772,
+                {
+                    "testapp:testenv:testconfig2": """
+IpRanges:
+    - 1.2.3.4/32
+SharedToken:
+    - HeaderName: x-cdn-secret
+      Value: my-secret
+    - HeaderName: x-cdn-secret
+      Value: my-other-secret
+"""
+                },
+            )
+        )
+        self.addCleanup(
+            create_filter(
+                8080,
+                (
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                    ("APPCONFIG_PROFILES", "testapp:testenv:testconfig2"),
+                    ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3"),
+                ),
+            )
+        )
+        self.addCleanup(create_origin(8081))
+        wait_until_connectable(8080)
+        wait_until_connectable(8081)
+
+        status = (
+            urllib3.PoolManager()
+            .request(
+                "GET",
+                url="http://127.0.0.1:8080/",
+                headers={
+                    "x-cf-forwarded-url": "http://somehost.com/",
+                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+                    "x-cdn-secret": "my-mangos",
+                },
+            )
+            .status
+        )
+        self.assertEqual(status, 403)
+
+        status = (
+            urllib3.PoolManager()
+            .request(
+                "GET",
+                url="http://127.0.0.1:8080/",
+                headers={
+                    "x-cf-forwarded-url": "http://somehost.com/",
+                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+                    "x-cdn-secret": "my-other-secret",
+                },
+            )
+            .status
+        )
+        self.assertEqual(status, 200)
+
+    def test_shared_token_second_route_respected(self):
+        self.addCleanup(
+            create_appconfig_agent(
+                2772,
+                {
+                    "testapp:testenv:testconfig2": """
+IpRanges:
+    - 1.2.3.4/32
+SharedToken:
+    - HeaderName: x-cdn-secret
+      Value: my-secret
+    - HeaderName: x-cdn-secret
+      Value: my-other-secret
+"""
+                },
+            )
+        )
+        self.addCleanup(
+            create_filter(
+                8080,
+                (
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                    ("APPCONFIG_PROFILES", "testapp:testenv:testconfig2"),
+                    ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3"),
+                ),
+            )
+        )
+        self.addCleanup(create_origin(8081))
+        wait_until_connectable(8080)
+        wait_until_connectable(8081)
+
+        status = (
+            urllib3.PoolManager()
+            .request(
+                "GET",
+                url="http://127.0.0.1:8080/",
+                headers={
+                    "x-cf-forwarded-url": "http://somehost.com/",
+                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+                    "x-cdn-secret": "my-mangos",
+                },
+            )
+            .status
+        )
+        self.assertEqual(status, 403)
+
+        status = (
+            urllib3.PoolManager()
+            .request(
+                "GET",
+                url="http://127.0.0.1:8080/",
+                headers={
+                    "x-cf-forwarded-url": "http://somehost.com/",
+                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+                    "x-cdn-secret": "my-other-secret",
+                },
+            )
+            .status
+        )
+        self.assertEqual(status, 200)
+
+    def test_shared_token_header_removed(self):
+        self.addCleanup(
+            create_appconfig_agent(
+                2772,
+                {
+                    "testapp:testenv:testconfig2": """
+IpRanges:
+    - 1.2.3.4/32
+SharedToken:
+    - HeaderName: x-cdn-secret
+      Value: my-secret
+    - HeaderName: x-shared-secret
+      Value: my-other-secret
+"""
+                },
+            )
+        )
+        self.addCleanup(
+            create_filter(
+                8080,
+                (
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                    ("APPCONFIG_PROFILES", "testapp:testenv:testconfig2"),
+                    ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3"),
+                ),
+            )
+        )
+        self.addCleanup(create_origin(8081))
+        wait_until_connectable(8080)
+        wait_until_connectable(8081)
+
+        response = urllib3.PoolManager().request(
+            "GET",
+            url="http://127.0.0.1:8080/",
+            headers={
+                "x-cf-forwarded-url": "http://somehost.com/",
+                "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+                "x-cdn-secret": "my-mangos",
+                "x-shared-secret": "my-other-secret",
+            },
+        )
+        self.assertEqual(response.status, 200)
+        self.assertNotIn("x-echo-header-x-shared-secret", response.headers)
+        self.assertNotIn("x-echo-header-my-other-secret", response.headers)
+
+
 def create_filter(port, env=()):
     def stop():
         process.terminate()
