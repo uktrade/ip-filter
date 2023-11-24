@@ -89,9 +89,6 @@ def handle_request(u_path):
         )
         return render_access_denied("Unknown", forwarded_url, request_id)
 
-    # TODO: The shared token header shoould also be removed.
-    headers_to_remove = ["connection"]
-
     protected_paths = app.config["PROTECTED_PATHS"]
     public_paths = app.config["PUBLIC_PATHS"]
 
@@ -118,6 +115,8 @@ def handle_request(u_path):
     ):
         ip_filter_enabled_and_required_for_path = False
 
+    headers_to_remove = []
+
     if ip_filter_enabled_and_required_for_path:
         ip_filter_rules = get_ipfilter_config(app.config["APPCONFIG_PROFILES"])
 
@@ -125,6 +124,16 @@ def handle_request(u_path):
             ip_address(client_ip) in ip_network(ip_range)
             for ip_range in ip_filter_rules["ips"]
         )
+
+        shared_tokens = ip_filter_rules["shared_tokens"]
+        shared_token_ok = [
+            shared_token["HeaderName"] in request.headers
+            and constant_time_is_equal(
+                shared_token["Value"].encode(),
+                request.headers[shared_token["HeaderName"]].encode(),
+            )
+            for shared_token in shared_tokens
+        ]
 
         def verify_credentials(app_auth: dict) -> bool:
             return (
@@ -152,15 +161,25 @@ def handle_request(u_path):
 
         any_on_auth_path_and_ok = any(on_auth_path_and_ok)
 
+        headers_to_remove = tuple(
+            set(shared_token["HeaderName"].lower() for shared_token in shared_tokens)
+        ) + ("connection",)
+
+        shared_token_checks_passed = not shared_tokens or any(shared_token_ok)
+
         # Valid basic auth username and password were supplied, but basic auth path doesn't match request url
         should_request_auth = not any_on_auth_path_and_ok and (
             ip_in_whitelist
+            and shared_token_checks_passed
             and len(on_auth_path_and_ok)
             and all(not ok for ok in on_auth_path_and_ok)
         )
 
         should_respond_ok_to_auth_request = (
-            any_on_auth_path_and_ok and ip_in_whitelist and len(on_auth_path_and_ok)
+            any_on_auth_path_and_ok
+            and ip_in_whitelist
+            and shared_token_checks_passed
+            and len(on_auth_path_and_ok)
         )
 
         if should_request_auth:
@@ -174,8 +193,10 @@ def handle_request(u_path):
         if should_respond_ok_to_auth_request:
             return "ok"
 
-        all_checks_passed = ip_in_whitelist and (
-            not any(basic_auths) or any(basic_auths_ok)
+        basic_auth_checks_passed = not any(basic_auths) or any(basic_auths_ok)
+
+        all_checks_passed = (
+            ip_in_whitelist and shared_token_checks_passed and basic_auth_checks_passed
         )
 
         if not all_checks_passed:

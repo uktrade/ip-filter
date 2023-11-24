@@ -6,7 +6,8 @@ import yaml
 
 
 class Environ(UserDict):
-    """Handle app configuration from os.environ with support for copilot environment specific configuration and type conversion."""
+    """Handle app configuration from os.environ with support for copilot
+    environment specific configuration and type conversion."""
 
     def get_value(self, key, /, default=None, allow_environment_override=False):
         environment = self.data["COPILOT_ENVIRONMENT_NAME"].upper()
@@ -59,11 +60,13 @@ class Environ(UserDict):
 
 def get_appconfig_configuration(appconfig_path):
     """
-    Retrieve appconfig data from a local appconfig agent. `appconfig_path` should be in the format:
+    Retrieve appconfig data from a local appconfig agent. `appconfig_path`
+    should be in the format:
 
     {application}:{environment}:{configuration}
 
-    Note, environment refers to the AppConfig environment, not the local application environment.
+    Note, environment refers to the AppConfig environment, not the local
+    application environment.
     """
     from main import app
 
@@ -83,17 +86,20 @@ def get_appconfig_configuration(appconfig_path):
 
 
 def get_ipfilter_config(appconfig_paths):
-    """Retreive a list of app config configurations and combine them into a single dict."""
+    """Retreive a list of app config configurations and combine them into a
+    single dict."""
     ips = []
     auth = []
+    shared_tokens = []
     for config_path in appconfig_paths:
         config = get_appconfig_configuration(config_path)
 
         ips.extend(config.get("IpRanges", []))
         auth.extend(config.get("BasicAuth", []))
+        shared_tokens.extend(config.get("SharedTokens", []))
 
     return {
         "ips": ips,
         "auth": auth,
-        "shared_token": None,
+        "shared_tokens": shared_tokens,
     }

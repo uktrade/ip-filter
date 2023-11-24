@@ -39,6 +39,8 @@ multiprocess==0.70.14
     # via -r requirements_test.in
 nodeenv==1.8.0
     # via pre-commit
+parameterized==0.9.0
+    # via -r requirements_test.in
 platformdirs==4.0.0
     # via virtualenv
 pre-commit==3.5.0

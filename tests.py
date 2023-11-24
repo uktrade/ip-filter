@@ -18,10 +18,37 @@ from flask import Response
 from flask import abort
 from flask import request
 from multiprocess import Process
+from parameterized import parameterized
 from werkzeug.routing import Rule
 from werkzeug.serving import WSGIRequestHandler
 
 from config import Environ
+
+SHARED_HEADER_CONFIG = """
+IpRanges:
+    - 1.2.3.4/32
+SharedTokens:
+    - HeaderName: x-cdn-secret
+      Value: my-secret
+"""
+SHARED_HEADER_CONFIG_TWO_VALUES = """
+IpRanges:
+    - 1.2.3.4/32
+SharedTokens:
+    - HeaderName: x-cdn-secret
+      Value: my-secret
+    - HeaderName: x-cdn-secret
+      Value: my-other-secret
+"""
+SHARED_HEADER_CONFIG_TWO_HEADERS = """
+IpRanges:
+    - 1.2.3.4/32
+SharedTokens:
+    - HeaderName: x-cdn-secret
+      Value: my-secret
+    - HeaderName: x-shared-secret
+      Value: my-other-secret
+"""
 
 
 class EnvironTestCase(unittest.TestCase):
@@ -133,7 +160,7 @@ class EnvironTestCase(unittest.TestCase):
 
 
 class ConfigurationTestCase(unittest.TestCase):
-    """Tests covering the configuration logic"""
+    """Tests covering the configuration logic."""
 
     def _setup_environment(
         self,
@@ -162,9 +189,7 @@ class ConfigurationTestCase(unittest.TestCase):
         return response
 
     def test_ipfilter_disabled(self):
-        """
-        If the IP filter is disabled requests pass through to the origin.
-        """
+        """If the IP filter is disabled requests pass through to the origin."""
         self._setup_environment(
             (
                 ("COPILOT_ENVIRONMENT_NAME", "staging"),
@@ -289,7 +314,7 @@ class ConfigurationTestCase(unittest.TestCase):
 
 
 class ProxyTestCase(unittest.TestCase):
-    """Tests that cover the ip filter's proxy functionality"""
+    """Tests that cover the ip filter's proxy functionality."""
 
     def test_meta_wait_until_connectable_raises(self):
         with self.assertRaises(OSError):
@@ -1296,7 +1321,7 @@ class ProxyTestCase(unittest.TestCase):
 
 
 class IpFilterLogicTestCase(unittest.TestCase):
-    """Tests covering the IP filter logic"""
+    """Tests covering the IP filter logic."""
 
     def test_missing_x_forwarded_for_returns_403_and_origin_not_called(self):
         # Origin not running: if an attempt was made to connect to it, we
@@ -1795,6 +1820,7 @@ BasicAuth:
     def test_basic_auth_second_route_respected(self):
         """
         Test that while auth path doesn't match request:
+
         1. 403 returned for valid basic auth credentials when ip not whitelisted.
         2. 403 returned for first set of invalid basic auth credentials when ip is whitelisted.
         3. 403 returned for second set of invalid basic auth credentials when ip is whitelisted.
@@ -1915,6 +1941,157 @@ BasicAuth:
 
         self.assertEqual(response.status, 200)
         self.assertEqual(response.data, b"ok")
+
+
+class SharedTokenTestCase(unittest.TestCase):
+    def get_shared_token_response(self, custom_headers=None):
+        if custom_headers == None:
+            custom_headers = {"x-cdn-secret": "my-secret"}
+
+        headers = {
+            "x-cf-forwarded-url": "http://somehost.com/",
+            "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+        } | custom_headers
+
+        return urllib3.PoolManager().request(
+            "GET",
+            url="http://127.0.0.1:8080/",
+            headers=headers,
+        )
+
+    @parameterized.expand([
+        ({}, 403),
+        ({"x-cdn-secret": "not-my-secret"}, 403),
+        (None, 200),
+    ])
+    def test_shared_token_header_respected(self, custom_headers, expected_status):
+        self.addCleanup(
+            create_appconfig_agent(
+                2772,
+                {"testapp:testenv:testconfig2": SHARED_HEADER_CONFIG},
+            )
+        )
+        self.addCleanup(
+            create_filter(
+                8080,
+                (
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                    ("APPCONFIG_PROFILES", "testapp:testenv:testconfig2"),
+                    ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3"),
+                ),
+            )
+        )
+        self.addCleanup(create_origin(8081))
+        wait_until_connectable(8080)
+        wait_until_connectable(8081)
+
+        status = self.get_shared_token_response(custom_headers=custom_headers).status
+
+        self.assertEqual(status, expected_status)
+
+    @parameterized.expand(
+        [
+            ({"x-cdn-secret": "my-mangos"}, 403),
+            ({"x-cdn-secret": "my-other-secret"}, 200),
+        ]
+    )
+    def test_second_shared_token_header_respected(
+        self, custom_headers, expected_status
+    ):
+        self.addCleanup(
+            create_appconfig_agent(
+                2772,
+                {"testapp:testenv:testconfig2": SHARED_HEADER_CONFIG_TWO_VALUES},
+            )
+        )
+        self.addCleanup(
+            create_filter(
+                8080,
+                (
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                    ("APPCONFIG_PROFILES", "testapp:testenv:testconfig2"),
+                    ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3"),
+                ),
+            )
+        )
+        self.addCleanup(create_origin(8081))
+        wait_until_connectable(8080)
+        wait_until_connectable(8081)
+
+        status = self.get_shared_token_response(custom_headers=custom_headers).status
+
+        self.assertEqual(status, expected_status)
+
+    @parameterized.expand(
+        [
+            ({"x-cdn-secret": "my-mangos"}, 403),
+            ({"x-cdn-secret": "my-other-secret"}, 200),
+        ]
+    )
+    def test_shared_token_second_route_respected(self, custom_headers, expected_status):
+        self.addCleanup(
+            create_appconfig_agent(
+                2772,
+                {"testapp:testenv:testconfig2": SHARED_HEADER_CONFIG_TWO_VALUES},
+            )
+        )
+        self.addCleanup(
+            create_filter(
+                8080,
+                (
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                    ("APPCONFIG_PROFILES", "testapp:testenv:testconfig2"),
+                    ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3"),
+                ),
+            )
+        )
+        self.addCleanup(create_origin(8081))
+        wait_until_connectable(8080)
+        wait_until_connectable(8081)
+
+        status = self.get_shared_token_response(custom_headers=custom_headers).status
+
+        self.assertEqual(status, expected_status)
+
+    def test_shared_token_header_removed(self):
+        self.addCleanup(
+            create_appconfig_agent(
+                2772,
+                {"testapp:testenv:testconfig2": SHARED_HEADER_CONFIG_TWO_HEADERS},
+            )
+        )
+        self.addCleanup(
+            create_filter(
+                8080,
+                (
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                    ("APPCONFIG_PROFILES", "testapp:testenv:testconfig2"),
+                    ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3"),
+                ),
+            )
+        )
+        self.addCleanup(create_origin(8081))
+        wait_until_connectable(8080)
+        wait_until_connectable(8081)
+
+        response = self.get_shared_token_response(
+            custom_headers={
+                "x-cdn-secret": "my-mangos",
+                "x-shared-secret": "my-other-secret",
+            }
+        )
+
+        self.assertEqual(response.status, 200)
+        self.assertNotIn("x-echo-header-x-shared-secret", response.headers)
+        self.assertNotIn("x-echo-header-my-other-secret", response.headers)
 
 
 def create_filter(port, env=()):
