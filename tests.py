@@ -24,6 +24,32 @@ from werkzeug.serving import WSGIRequestHandler
 
 from config import Environ
 
+SHARED_HEADER_CONFIG = """
+IpRanges:
+    - 1.2.3.4/32
+SharedTokens:
+    - HeaderName: x-cdn-secret
+      Value: my-secret
+"""
+SHARED_HEADER_CONFIG_TWO_VALUES = """
+IpRanges:
+    - 1.2.3.4/32
+SharedTokens:
+    - HeaderName: x-cdn-secret
+      Value: my-secret
+    - HeaderName: x-cdn-secret
+      Value: my-other-secret
+"""
+SHARED_HEADER_CONFIG_TWO_HEADERS = """
+IpRanges:
+    - 1.2.3.4/32
+SharedTokens:
+    - HeaderName: x-cdn-secret
+      Value: my-secret
+    - HeaderName: x-shared-secret
+      Value: my-other-secret
+"""
+
 
 class EnvironTestCase(unittest.TestCase):
     def test_missing_key_raises_keyerror(self):
@@ -1940,15 +1966,7 @@ class SharedTokenTestCase(unittest.TestCase):
         self.addCleanup(
             create_appconfig_agent(
                 2772,
-                {
-                    "testapp:testenv:testconfig2": """
-IpRanges:
-    - 1.2.3.4/32
-SharedTokens:
-    - HeaderName: x-cdn-secret
-      Value: my-secret
-"""
-                },
+                {"testapp:testenv:testconfig2": SHARED_HEADER_CONFIG},
             )
         )
         self.addCleanup(
@@ -1983,17 +2001,7 @@ SharedTokens:
         self.addCleanup(
             create_appconfig_agent(
                 2772,
-                {
-                    "testapp:testenv:testconfig2": """
-IpRanges:
-    - 1.2.3.4/32
-SharedTokens:
-    - HeaderName: x-cdn-secret
-      Value: my-secret
-    - HeaderName: x-cdn-secret
-      Value: my-other-secret
-"""
-                },
+                {"testapp:testenv:testconfig2": SHARED_HEADER_CONFIG_TWO_VALUES},
             )
         )
         self.addCleanup(
@@ -2026,17 +2034,7 @@ SharedTokens:
         self.addCleanup(
             create_appconfig_agent(
                 2772,
-                {
-                    "testapp:testenv:testconfig2": """
-IpRanges:
-    - 1.2.3.4/32
-SharedTokens:
-    - HeaderName: x-cdn-secret
-      Value: my-secret
-    - HeaderName: x-cdn-secret
-      Value: my-other-secret
-"""
-                },
+                {"testapp:testenv:testconfig2": SHARED_HEADER_CONFIG_TWO_VALUES},
             )
         )
         self.addCleanup(
@@ -2063,17 +2061,7 @@ SharedTokens:
         self.addCleanup(
             create_appconfig_agent(
                 2772,
-                {
-                    "testapp:testenv:testconfig2": """
-IpRanges:
-    - 1.2.3.4/32
-SharedTokens:
-    - HeaderName: x-cdn-secret
-      Value: my-secret
-    - HeaderName: x-shared-secret
-      Value: my-other-secret
-"""
-                },
+                {"testapp:testenv:testconfig2": SHARED_HEADER_CONFIG_TWO_HEADERS},
             )
         )
         self.addCleanup(
