@@ -1959,9 +1959,11 @@ class SharedTokenTestCase(unittest.TestCase):
             headers=headers,
         )
 
-    @parameterized.expand(
-        [({}, 403), ({"x-cdn-secret": "not-my-secret"}, 403), (None, 200)]
-    )
+    @parameterized.expand([
+        ({}, 403),
+        ({"x-cdn-secret": "not-my-secret"}, 403),
+        (None, 200),
+    ])
     def test_shared_token_header_respected(self, custom_headers, expected_status):
         self.addCleanup(
             create_appconfig_agent(
