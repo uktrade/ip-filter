@@ -18,6 +18,7 @@ from flask import Response
 from flask import abort
 from flask import request
 from multiprocess import Process
+from parameterized import parameterized
 from werkzeug.routing import Rule
 from werkzeug.serving import WSGIRequestHandler
 
@@ -1918,7 +1919,10 @@ BasicAuth:
 
 
 class SharedTokenTestCase(unittest.TestCase):
-    def get_shared_token_response(self, custom_headers={"x-cdn-secret": "my-secret"}):
+    def get_shared_token_response(self, custom_headers=None):
+        if custom_headers == None:
+            custom_headers = {"x-cdn-secret": "my-secret"}
+
         headers = {
             "x-cf-forwarded-url": "http://somehost.com/",
             "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
@@ -1930,7 +1934,10 @@ class SharedTokenTestCase(unittest.TestCase):
             headers=headers,
         )
 
-    def test_shared_token_header_respected(self):
+    @parameterized.expand(
+        [({}, 403), ({"x-cdn-secret": "not-my-secret"}, 403), (None, 200)]
+    )
+    def test_shared_token_header_respected(self, custom_headers, expected_status):
         self.addCleanup(
             create_appconfig_agent(
                 2772,
@@ -1961,66 +1968,19 @@ SharedTokens:
         wait_until_connectable(8080)
         wait_until_connectable(8081)
 
-        # status = self.get_shared_token_response(custom_headers={}).status
+        status = self.get_shared_token_response(custom_headers=custom_headers).status
 
-        # self.assertEqual(status, 403)
+        self.assertEqual(status, expected_status)
 
-        # status = self.get_shared_token_response(
-        #     custom_headers={"x-cdn-secret": "not-my-secret"}
-        # ).status
-
-        # self.assertEqual(status, 403)
-
-        status = self.get_shared_token_response().status
-
-        self.assertEqual(status, 200)
-
-    def test_second_shared_token_header_respected(self):
-        self.addCleanup(
-            create_appconfig_agent(
-                2772,
-                {
-                    "testapp:testenv:testconfig2": """
-IpRanges:
-    - 1.2.3.4/32
-SharedTokens:
-    - HeaderName: x-cdn-secret
-      Value: my-secret
-    - HeaderName: x-cdn-secret
-      Value: my-other-secret
-"""
-                },
-            )
-        )
-        self.addCleanup(
-            create_filter(
-                8080,
-                (
-                    ("SERVER", "localhost:8081"),
-                    ("SERVER_PROTO", "http"),
-                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
-                    ("APPCONFIG_PROFILES", "testapp:testenv:testconfig2"),
-                    ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3"),
-                ),
-            )
-        )
-        self.addCleanup(create_origin(8081))
-        wait_until_connectable(8080)
-        wait_until_connectable(8081)
-
-        status = self.get_shared_token_response(
-            custom_headers={"x-cdn-secret": "my-mangos"}
-        ).status
-
-        self.assertEqual(status, 403)
-
-        status = self.get_shared_token_response(
-            custom_headers={"x-cdn-secret": "my-other-secret"}
-        ).status
-
-        self.assertEqual(status, 200)
-
-    def test_shared_token_second_route_respected(self):
+    @parameterized.expand(
+        [
+            ({"x-cdn-secret": "my-mangos"}, 403),
+            ({"x-cdn-secret": "my-other-secret"}, 200),
+        ]
+    )
+    def test_second_shared_token_header_respected(
+        self, custom_headers, expected_status
+    ):
         self.addCleanup(
             create_appconfig_agent(
                 2772,
@@ -2053,17 +2013,52 @@ SharedTokens:
         wait_until_connectable(8080)
         wait_until_connectable(8081)
 
-        status = self.get_shared_token_response(
-            custom_headers={"x-cdn-secret": "my-mangos"}
-        ).status
+        status = self.get_shared_token_response(custom_headers=custom_headers).status
 
-        self.assertEqual(status, 403)
+        self.assertEqual(status, expected_status)
 
-        status = self.get_shared_token_response(
-            custom_headers={"x-cdn-secret": "my-other-secret"}
-        ).status
+    @parameterized.expand(
+        [
+            ({"x-cdn-secret": "my-mangos"}, 403),
+            ({"x-cdn-secret": "my-other-secret"}, 200),
+        ]
+    )
+    def test_shared_token_second_route_respected(self, custom_headers, expected_status):
+        self.addCleanup(
+            create_appconfig_agent(
+                2772,
+                {
+                    "testapp:testenv:testconfig2": """
+IpRanges:
+    - 1.2.3.4/32
+SharedTokens:
+    - HeaderName: x-cdn-secret
+      Value: my-secret
+    - HeaderName: x-cdn-secret
+      Value: my-other-secret
+"""
+                },
+            )
+        )
+        self.addCleanup(
+            create_filter(
+                8080,
+                (
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                    ("APPCONFIG_PROFILES", "testapp:testenv:testconfig2"),
+                    ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "-3"),
+                ),
+            )
+        )
+        self.addCleanup(create_origin(8081))
+        wait_until_connectable(8080)
+        wait_until_connectable(8081)
 
-        self.assertEqual(status, 200)
+        status = self.get_shared_token_response(custom_headers=custom_headers).status
+
+        self.assertEqual(status, expected_status)
 
     def test_shared_token_header_removed(self):
         self.addCleanup(
