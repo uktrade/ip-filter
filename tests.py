@@ -134,7 +134,7 @@ class EnvironTestCase(unittest.TestCase):
 
 
 class ConfigurationTestCase(unittest.TestCase):
-    """Tests covering the configuration logic"""
+    """Tests covering the configuration logic."""
 
     def _setup_environment(
         self,
@@ -163,9 +163,7 @@ class ConfigurationTestCase(unittest.TestCase):
         return response
 
     def test_ipfilter_disabled(self):
-        """
-        If the IP filter is disabled requests pass through to the origin.
-        """
+        """If the IP filter is disabled requests pass through to the origin."""
         self._setup_environment(
             (
                 ("COPILOT_ENVIRONMENT_NAME", "staging"),
@@ -290,7 +288,7 @@ class ConfigurationTestCase(unittest.TestCase):
 
 
 class ProxyTestCase(unittest.TestCase):
-    """Tests that cover the ip filter's proxy functionality"""
+    """Tests that cover the ip filter's proxy functionality."""
 
     def test_meta_wait_until_connectable_raises(self):
         with self.assertRaises(OSError):
@@ -1297,7 +1295,7 @@ class ProxyTestCase(unittest.TestCase):
 
 
 class IpFilterLogicTestCase(unittest.TestCase):
-    """Tests covering the IP filter logic"""
+    """Tests covering the IP filter logic."""
 
     def test_missing_x_forwarded_for_returns_403_and_origin_not_called(self):
         # Origin not running: if an attempt was made to connect to it, we
@@ -1796,6 +1794,7 @@ BasicAuth:
     def test_basic_auth_second_route_respected(self):
         """
         Test that while auth path doesn't match request:
+
         1. 403 returned for valid basic auth credentials when ip not whitelisted.
         2. 403 returned for first set of invalid basic auth credentials when ip is whitelisted.
         3. 403 returned for second set of invalid basic auth credentials when ip is whitelisted.
