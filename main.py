@@ -11,7 +11,9 @@ from flask import Flask
 from flask import Response
 from flask import render_template
 from flask import request
+from flask.logging import default_handler
 
+from asim_formatter import ASIMFormatter
 from config import get_ipfilter_config
 from utils import constant_time_is_equal
 
@@ -28,9 +30,10 @@ PoolClass = (
 )
 http = PoolClass(app.config["SERVER"], maxsize=1000)
 
+default_handler.setFormatter(ASIMFormatter())
 logging.basicConfig(stream=sys.stdout, level=app.config["LOG_LEVEL"])
 logger = logging.getLogger(__name__)
-
+logger.addHandler(default_handler)
 request_id_alphabet = string.ascii_letters + string.digits
 
 
@@ -246,3 +249,10 @@ def handle_request(u_path):
     logger.info("[%s] Starting response to client", request_id)
 
     return downstream_response
+
+
+@app.after_request
+def log_response(response):
+    app.logger.info("Response details", extra={"response": response})
+
+    return response
