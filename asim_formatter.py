@@ -37,7 +37,6 @@ class ASIMFormatter(logging.Formatter):
         log_time = datetime.utcfromtimestamp(record.created).isoformat()
 
         return {
-            # Event fields...
             "EventMessage": record.msg,
             "EventCount": 1,
             "EventStartTime": log_time,
@@ -47,10 +46,9 @@ class ASIMFormatter(logging.Formatter):
             "EventOriginalSeverity": record.levelname,  # duplicate of above?
             "EventSchema": "WebSession",
             "EventSchemaVersion": "0.2.6",
-            # Other fields...
         }
 
-        # Missing EventUid, EventOriginalUid, EventOriginalType, EventOriginalSubType, EventOriginalResultDetails, EventProduct
+        # TODO: look at expanding to include other fields from schema: https://learn.microsoft.com/en-us/azure/sentinel/normalization-schema-web
 
     def get_request_dict(self, request: Request) -> dict:
         request_dict = {

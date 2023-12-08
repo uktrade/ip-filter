@@ -163,7 +163,9 @@ class EnvironTestCase(unittest.TestCase):
         )
 
 
-class BaseTestCase(unittest.TestCase):
+class ConfigurationTestCase(unittest.TestCase):
+    """Tests covering the configuration logic."""
+
     def _setup_environment(
         self,
         env=(),
@@ -189,10 +191,6 @@ class BaseTestCase(unittest.TestCase):
         )
 
         return response
-
-
-class ConfigurationTestCase(BaseTestCase):
-    """Tests covering the configuration logic."""
 
     def test_ipfilter_disabled(self):
         """If the IP filter is disabled requests pass through to the origin."""
@@ -2255,7 +2253,7 @@ class TestHandler(logging.Handler):
         self.records_list.append(record)
 
 
-class LoggingTestCase(BaseTestCase):
+class LoggingTestCase(unittest.TestCase):
     def test_asim_formatter_get_log_dict(self):
         formatter = ASIMFormatter()
         log_record = logging.LogRecord(
