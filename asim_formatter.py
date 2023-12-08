@@ -1,18 +1,21 @@
 import json
 import logging
+import os
 from datetime import datetime
 
+from flask import Request
+from flask import Response
 from flask import has_request_context
 from flask import request
 
 
 class ASIMFormatter(logging.Formatter):
-    def _get_event_result(self, response) -> str:
+    def _get_event_result(self, response: Response) -> str:
         event_result = "Success" if response.status_code < 400 else "Failure"
 
         return event_result
 
-    def _get_file_name(self, request) -> str:
+    def _get_file_name(self, request: Request) -> str:
         if not request.files:
             return "N/A"
         if len(request.files.keys()) == 1:
@@ -20,7 +23,7 @@ class ASIMFormatter(logging.Formatter):
 
         return ";".join(request.files.keys()[0])
 
-    def _get_event_severity(self, log_level):
+    def _get_event_severity(self, log_level: str) -> str:
         map = {
             "DEBUG": "Informational",
             "INFO": "Informational",
@@ -45,15 +48,12 @@ class ASIMFormatter(logging.Formatter):
             "EventSchema": "WebSession",
             "EventSchemaVersion": "0.2.6",
             # Other fields...
-            "AdditionalFields": {
-                "TraceHeaders": {},
-            },
         }
 
         # Missing EventUid, EventOriginalUid, EventOriginalType, EventOriginalSubType, EventOriginalResultDetails, EventProduct
 
-    def get_request_dict(self, request):
-        return {
+    def get_request_dict(self, request: Request) -> dict:
+        request_dict = {
             "Url": request.url,
             "UrlOriginal": request.url,
             "HttpVersion": request.environ.get("SERVER_PROTOCOL"),
@@ -67,9 +67,19 @@ class ASIMFormatter(logging.Formatter):
             "HttpHost": request.host,
             # TODO: add better support for multi-file upload and other file fields e.g. FileSize
             "FileName": self._get_file_name(request),
+            "AdditionalFields": {
+                "TraceHeaders": {},
+            },
         }
 
-    def get_response_dict(self, response):
+        for trace_header in os.environ.get("DLFA_TRACE_HEADERS", ("X-Amzn-Trace-Id",)):
+            request_dict["AdditionalFields"]["TraceHeaders"][
+                trace_header
+            ] = request.headers.get(trace_header, None)
+
+        return request_dict
+
+    def get_response_dict(self, response: Response) -> dict:
         return {
             "EventResult": self._get_event_result(response),
             "EventResultDetails": response.status_code,

@@ -1,6 +1,8 @@
 import base64
 import gzip
 import itertools
+import json
+import logging
 import os
 import signal
 import socket
@@ -10,6 +12,7 @@ import time
 import unittest
 import urllib.parse
 import uuid
+from datetime import datetime
 from io import BytesIO
 
 import urllib3
@@ -22,6 +25,7 @@ from parameterized import parameterized
 from werkzeug.routing import Rule
 from werkzeug.serving import WSGIRequestHandler
 
+from asim_formatter import ASIMFormatter
 from config import Environ
 
 SHARED_HEADER_CONFIG = """
@@ -159,9 +163,7 @@ class EnvironTestCase(unittest.TestCase):
         )
 
 
-class ConfigurationTestCase(unittest.TestCase):
-    """Tests covering the configuration logic."""
-
+class BaseTestCase(unittest.TestCase):
     def _setup_environment(
         self,
         env=(),
@@ -187,6 +189,10 @@ class ConfigurationTestCase(unittest.TestCase):
         )
 
         return response
+
+
+class ConfigurationTestCase(BaseTestCase):
+    """Tests covering the configuration logic."""
 
     def test_ipfilter_disabled(self):
         """If the IP filter is disabled requests pass through to the origin."""
@@ -1959,11 +1965,13 @@ class SharedTokenTestCase(unittest.TestCase):
             headers=headers,
         )
 
-    @parameterized.expand([
-        ({}, 403),
-        ({"x-cdn-secret": "not-my-secret"}, 403),
-        (None, 200),
-    ])
+    @parameterized.expand(
+        [
+            ({}, 403),
+            ({"x-cdn-secret": "not-my-secret"}, 403),
+            (None, 200),
+        ]
+    )
     def test_shared_token_header_respected(self, custom_headers, expected_status):
         self.addCleanup(
             create_appconfig_agent(
@@ -2232,6 +2240,157 @@ def create_origin(port):
     process.start()
 
     return stop
+
+
+class TestHandler(logging.Handler):
+    """A handler class which stores LogRecord entries in a list."""
+
+    def __init__(self, records_list):
+        """Initiate the handler :param records_list: a list to store the
+        LogRecords entries."""
+        self.records_list = records_list
+        super().__init__()
+
+    def emit(self, record):
+        self.records_list.append(record)
+
+
+class LoggingTestCase(BaseTestCase):
+    def test_asim_formatter_get_log_dict(self):
+        formatter = ASIMFormatter()
+        log_record = logging.LogRecord(
+            name=__name__,
+            level=logging.INFO,
+            pathname=__file__,
+            lineno=10,
+            msg="This is a test log message",
+            args=(),
+            exc_info=None,
+        )
+        log_time = datetime.utcfromtimestamp(log_record.created).isoformat()
+
+        log_dict = formatter.get_log_dict(log_record)
+
+        assert log_dict == {
+            "EventMessage": log_record.msg,
+            "EventCount": 1,
+            "EventStartTime": log_time,
+            "EventEndTime": log_time,
+            "EventType": "HTTPsession",
+            "EventSeverity": "Informational",
+            "EventOriginalSeverity": log_record.levelname,  # duplicate of above?
+            "EventSchema": "WebSession",
+            "EventSchemaVersion": "0.2.6",
+            # Other fields...
+        }
+
+    def test_asim_formatter_get_request_dict(self):
+        self.app = Flask(__name__)
+        with self.app.test_request_context(
+            method="GET",
+            path="/example_route",
+            query_string="param1=value1&param2=value2",
+            headers={
+                "Content-Type": "application/json",
+                "X-Forwarded-For": "1.1.1.1",
+                "X-Amzn-Trace-Id": "123testid",
+            },
+            data='{"key": "value"}',
+        ):
+            request_dict = ASIMFormatter().get_request_dict(request)
+
+            assert request_dict == {
+                "Url": request.url,
+                "UrlOriginal": request.url,
+                "HttpVersion": request.environ.get("SERVER_PROTOCOL"),
+                "HttpRequestMethod": request.method,
+                "HttpContentType": request.content_type,
+                "HttpContentFormat": request.mimetype,
+                "HttpReferrer": request.referrer,
+                "HttpUserAgent": str(request.user_agent),
+                "HttpRequestXff": request.headers["X-Forwarded-For"],
+                "HttpResponseTime": "N/A",
+                "HttpHost": request.host,
+                "FileName": "N/A",
+                "AdditionalFields": {
+                    "TraceHeaders": {"X-Amzn-Trace-Id": "123testid"},
+                },
+            }
+
+    def test_asim_formatter_get_response_dict(self):
+        response = Response(
+            status=200,
+            headers={"Content-Type": "application/json"},
+            response='{"key": "value"}',
+        )
+
+        response_dict = ASIMFormatter().get_response_dict(response)
+
+        assert response_dict == {
+            "EventResult": "Success",
+            "EventResultDetails": response.status_code,
+            "HttpStatusCode": response.status_code,
+        }
+
+    def test_asim_formatter_format(self):
+        log_record = logging.LogRecord(
+            name=__name__,
+            level=logging.INFO,
+            pathname=__file__,
+            lineno=10,
+            msg="This is a test log message",
+            args=(),
+            exc_info=None,
+        )
+        response = Response(
+            status=200,
+            headers={"Content-Type": "application/json"},
+            response='{"key": "value"}',
+        )
+        log_record.response = response
+        self.app = Flask(__name__)
+        log_time = datetime.utcfromtimestamp(log_record.created).isoformat()
+
+        with self.app.test_request_context(
+            method="GET",
+            path="/example_route",
+            query_string="param1=value1&param2=value2",
+            headers={"Content-Type": "application/json", "X-Forwarded-For": "1.1.1.1"},
+            data='{"key": "value"}',
+        ):
+            formatted_log = ASIMFormatter().format(log_record)
+            print(formatted_log)
+            assert formatted_log == json.dumps(
+                {
+                    "EventMessage": log_record.msg,
+                    "EventCount": 1,
+                    "EventStartTime": log_time,
+                    "EventEndTime": log_time,
+                    "EventType": "HTTPsession",
+                    "EventSeverity": "Informational",
+                    "EventOriginalSeverity": log_record.levelname,  # duplicate of above?
+                    "EventSchema": "WebSession",
+                    "EventSchemaVersion": "0.2.6",
+                    "Url": request.url,
+                    "UrlOriginal": request.url,
+                    "HttpVersion": request.environ.get("SERVER_PROTOCOL"),
+                    "HttpRequestMethod": request.method,
+                    "HttpContentType": request.content_type,
+                    "HttpContentFormat": request.mimetype,
+                    "HttpReferrer": request.referrer,
+                    "HttpUserAgent": str(request.user_agent),
+                    "HttpRequestXff": request.headers["X-Forwarded-For"],
+                    "HttpResponseTime": "N/A",
+                    "HttpHost": request.host,
+                    "FileName": "N/A",
+                    "AdditionalFields": {
+                        "TraceHeaders": {"X-Amzn-Trace-Id": None},
+                    },
+                    "EventResult": "Success",
+                    "EventResultDetails": response.status_code,
+                    "HttpStatusCode": response.status_code,
+                }
+            )
 
 
 def create_appconfig_agent(port, config_map=None):
