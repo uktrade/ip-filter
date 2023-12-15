@@ -41,3 +41,5 @@ PUBLIC_PATHS = env.list("PUBLIC_PATHS", default=[], allow_environment_override=T
 PROTECTED_PATHS = env.list(
     "PROTECTED_PATHS", default=[], allow_environment_override=True
 )
+
+ENABLE_XRAY = env.bool("ENABLE_XRAY", default=False)
