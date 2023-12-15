@@ -3,4 +3,5 @@ gunicorn
 urllib3
 jinja2
 pyyaml
+aws-xray-sdk>=2.12.1
 

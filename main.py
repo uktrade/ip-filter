@@ -14,6 +14,9 @@ from flask import request
 from flask.logging import default_handler
 
 from asim_formatter import ASIMFormatter
+from aws_xray_sdk.core import xray_recorder
+from aws_xray_sdk.ext.flask.middleware import XRayMiddleware
+
 from config import get_ipfilter_config
 from utils import constant_time_is_equal
 
@@ -22,6 +25,9 @@ HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]
 app = Flask(__name__, template_folder=Path(__file__).parent, static_folder=None)
 app.config.from_object("settings")
 
+if app.config["ENABLE_XRAY"]:
+    xray_recorder.configure(service="ipfilter")
+    XRayMiddleware(app, xray_recorder)
 
 PoolClass = (
     urllib3.HTTPConnectionPool
@@ -34,6 +40,7 @@ default_handler.setFormatter(ASIMFormatter())
 logging.basicConfig(stream=sys.stdout, level=app.config["LOG_LEVEL"])
 logger = logging.getLogger(__name__)
 logger.addHandler(default_handler)
+
 request_id_alphabet = string.ascii_letters + string.digits
 
 
