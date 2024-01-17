@@ -15,14 +15,12 @@ from flask.logging import default_handler
 
 from asim_formatter import ASIMFormatter
 from config import get_ipfilter_config
-from utils import constant_time_is_equal, validate_config
+from utils import constant_time_is_equal
 
 HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]
 
 app = Flask(__name__, template_folder=Path(__file__).parent, static_folder=None)
 app.config.from_object("settings")
-
-valid = validate_config(app.config)
 
 PoolClass = (
     urllib3.HTTPConnectionPool

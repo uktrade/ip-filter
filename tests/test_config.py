@@ -1,11 +1,11 @@
 import unittest
+from unittest.mock import patch
 
 import urllib3
-from config import Environ
-from flask.config import Config
+from config import Environ, get_ipfilter_config
 from parameterized import parameterized
+from schema import SchemaError
 from tests.conftest import create_filter, create_origin, wait_until_connectable, create_appconfig_agent
-from utils import validate_config
 
 
 class EnvironTestCase(unittest.TestCase):
@@ -272,93 +272,105 @@ class ConfigurationTestCase(unittest.TestCase):
 
 def good_config():
     return {
-        "LOG_LEVEL": "WARN",
-        "CACHE_TYPE": "SimpleCache",
-        "CACHE_DEFAULT_TIMEOUT": 300,
-        "DEBUG": False,
-        "ENVIRONMENT_NAME": "dev",
-        "SERVER_PROTO": "http",
-        "SERVER": "localhost",
-        "APPCONFIG_URL": "http://localhost:2772",
-        "EMAIL_NAME": "DBT",
-        "EMAIL": "test@test.test",
-        "IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX": -1,
-        "IPFILTER_ENABLED": True,
-        "APPCONFIG_PROFILES": [],
-        "PUBLIC_PATHS": [],
-        "PROTECTED_PATHS": [],
+        "IpRanges": ["1.1.1.1/32", "2.2.2.2"],
+        "BasicAuth": [
+            {
+                "Path": "/__some_path",
+                "Username": "my-user",
+                "Password": "my-secret"
+            }
+        ],
+        "SharedTokens": [
+            {
+                "HeaderName": "x-cdn-secret",
+                "Value": "my-secret"
+            },
+        ]
     }
 
-class ConfigurationValidationTestCase(unittest.TestCase):
-    def test_validate_config_success(self):
-        config = Config(".", good_config())
 
-        self.assertTrue(validate_config(config))
+@patch("config.get_appconfig_configuration")
+class AppConfigValidationTestCase(unittest.TestCase):
+    def test_get_ipfilter_config_success(self, appconfig):
+        config = good_config()
+        appconfig.return_value = config
 
-    def test_validate_ignores_additional_keys(self):
-        config = Config(".", good_config())
+        actual = get_ipfilter_config(["a"])
+
+        self.assertEqual(actual, {"ips": config["IpRanges"], "auth": config["BasicAuth"], "shared_tokens": config["SharedTokens"]})
+
+    def test_get_ipfilter_config_multiple_paths_aggregate_results(self, appconfig):
+        config_a = good_config()
+        config_b = {"IpRanges": ["3.3.3.3/24"]}
+        config_c = {"BasicAuth": [
+            {
+                "Path": "/__some_other_path",
+                "Username": "my-user-2",
+                "Password": "my-secret-2"
+            }
+        ]}
+        config_d = {"SharedTokens": [
+            {
+                "HeaderName": "x-shared-secret",
+                "Value": "my-other-secret"
+            }
+        ]}
+        appconfig.side_effect = lambda path: {"a": config_a, "b": config_b, "c": config_c, "d": config_d}[path]
+
+        actual = get_ipfilter_config(["a", "b", "c", "d"])
+
+        self.assertEqual(actual["ips"], ["1.1.1.1/32", "2.2.2.2", "3.3.3.3/24"])
+        self.assertEqual(actual["auth"], [config_a["BasicAuth"][0], config_c["BasicAuth"][0]])
+        self.assertEqual(actual["shared_tokens"], [config_a["SharedTokens"][0], config_d["SharedTokens"][0]])
+
+    def test_get_ipfilter_config_ignores_additional_keys(self, appconfig):
+        config = good_config()
         config["BOGUS"] = True
         config["SAMOSA"] = "Mmm"
+        appconfig.return_value = config
 
-        self.assertTrue(validate_config(config))
+        actual = get_ipfilter_config(["a"])
+        self.assertEqual(actual, {"ips": config["IpRanges"], "auth": config["BasicAuth"], "shared_tokens": config["SharedTokens"]})
+
+    def test_get_ipfilter_config_all_keys_optional(self, appconfig):
+        config = {}
+        appconfig.return_value = config
+
+        actual = get_ipfilter_config(["a"])
+        self.assertEqual(actual, {"ips": [], "auth": [], "shared_tokens": []})
+
+    def test_get_ipfilter_config_bad_ip_range_raises_exception(self, appconfig):
+        conf = good_config()
+        conf["IpRanges"].append("not-an-ip-range")
+        appconfig.return_value = conf
+
+        try:
+            get_ipfilter_config(["a"])
+            self.fail("Validation should have failed")
+        except SchemaError as ex:
+            self.assertTrue("iprange('not-an-ip-range') should evaluate to True" in str(ex))
+            self.assertTrue("Key 'IpRanges'" in str(ex))
 
     @parameterized.expand(
         [
-            "LOG_LEVEL",
-            "CACHE_TYPE",
-            "CACHE_DEFAULT_TIMEOUT",
-            "DEBUG",
-            "ENVIRONMENT_NAME",
-            "SERVER_PROTO",
-            "SERVER",
-            "APPCONFIG_URL",
-            "EMAIL_NAME",
-            "EMAIL",
-            "IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX",
-            "IPFILTER_ENABLED",
-            "APPCONFIG_PROFILES",
-            "PUBLIC_PATHS",
-            "PROTECTED_PATHS",
+            ("Path", 1, "1 should be instance of 'str'"),
+            ("Username", 2, "2 should be instance of 'str'"),
+            ("Password", 3, "3 should be instance of 'str'"),
+            ("Path", None, "Missing key: 'Path'"),
+            ("Username", None, "Missing key: 'Username'"),
+            ("Password", None, "Missing key: 'Password'"),
         ]
     )
-    def test_validate_config_missing_key_raises_exception(self, key):
+    def test_get_ipfilter_config_bad_auth_data_raises_exception(self, appconfig, key, data, message):
         conf = good_config()
-        del conf[key]
-        config = Config(".", conf)
+        if data is not None:
+            conf["BasicAuth"][0][key] = data
+        else:
+            del conf["BasicAuth"][0][key]
+        appconfig.return_value = conf
 
         try:
-            validate_config(config)
+            get_ipfilter_config(["a"])
             self.fail("Validation should have failed")
-        except Exception as ex:
-            self.assertTrue("Missing key:" in str(ex))
-            self.assertTrue(key in str(ex))
-    @parameterized.expand(
-        [
-            ("LOG_LEVEL", 6, "should be instance of 'str'"),
-            ("CACHE_TYPE", False, "should be instance of 'str'"),
-            ("CACHE_DEFAULT_TIMEOUT", "some time", "int"),
-            ("DEBUG", "True", "bool"),
-            ("ENVIRONMENT_NAME", False, "should be instance of 'str'"),
-            ("SERVER_PROTO", "cheese", "<lambda>('cheese') should evaluate to True"),
-            ("SERVER", 77, "should be instance of 'str'"),
-            ("APPCONFIG_URL", "not-a-url", "<lambda>('not-a-url') should evaluate to True"),
-            ("EMAIL_NAME", 20, "20 should be instance of 'str'"),
-            ("EMAIL", ["someone@an.address"], "['someone@an.address'] should be instance of 'str'"),
-            ("IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", "one", "int"),
-            ("IPFILTER_ENABLED", "yes", "'yes' should be instance of 'bool'"),
-            ("APPCONFIG_PROFILES", "profile_z", "'profile_z' should be instance of 'list'"),
-            ("PUBLIC_PATHS", 99, "99 should be instance of 'list'"),
-            ("PROTECTED_PATHS", [7, 2], "7 should be instance of 'str'"),
-        ]
-    )
-    def test_validate_config_bad_data_raises_exception(self, key, data, message):
-        conf = good_config()
-        conf[key] = data
-        config = Config(".", conf)
-
-        try:
-            validate_config(config)
-            self.fail("Validation should have failed")
-        except Exception as ex:
-            self.assertTrue(f"Key '{key}' error:" in str(ex))
+        except SchemaError as ex:
             self.assertTrue(message in str(ex))

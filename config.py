@@ -1,9 +1,14 @@
+import re
 from collections import UserDict
 from urllib.parse import urljoin
 
 import urllib3
 import yaml
 
+from schema import Optional
+from schema import Or
+from schema import Schema
+from schema import SchemaError
 
 class Environ(UserDict):
     """Handle app configuration from os.environ with support for copilot
@@ -85,14 +90,43 @@ def get_appconfig_configuration(appconfig_path):
     return yaml.safe_load(response.data)
 
 
-def get_ipfilter_config(appconfig_paths):
-    """Retreive a list of app config configurations and combine them into a
+def iprange(ip: str):
+    """
+    Do we use this or just str? Do we need to consider IPv6? Does the expression need to be more accurate?
+    """
+    return bool(re.match(r"[0-9.]+(/\d+)?", ip))
+
+
+APPCONFIG_SCHEMA = Schema(
+    {
+        Optional("IpRanges"): [iprange],
+        Optional("BasicAuth"): [
+            {
+                "Path": str,
+                "Username": str,
+                "Password": str,
+            }
+        ],
+        Optional("SharedTokens"): [
+            {
+                "HeaderName": str,
+                "Value": str,
+            }
+        ],
+        Optional(str): object
+    }
+)
+
+
+def get_ipfilter_config(appconfig_paths: list[str]):
+    """Retrieve a list of app config configurations and combine them into a
     single dict."""
     ips = []
     auth = []
     shared_tokens = []
     for config_path in appconfig_paths:
         config = get_appconfig_configuration(config_path)
+        APPCONFIG_SCHEMA.validate(config)
 
         ips.extend(config.get("IpRanges", []))
         auth.extend(config.get("BasicAuth", []))
