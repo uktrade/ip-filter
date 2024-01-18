@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import urllib3
 
-from config import Environ, get_ipfilter_config
+from config import Environ, get_ipfilter_config, ValidationError
 from parameterized import parameterized
 from schema import SchemaError
 from tests.conftest import create_filter, create_origin, wait_until_connectable, create_appconfig_agent
@@ -297,6 +297,19 @@ class ConfigurationTestCase(unittest.TestCase):
         response = self._make_request("/private-test")
         self.assertEqual(response.status, 403)
 
+    def test_ipfilter_enabled_and_missing_app_config_agent_rejects_traffic(self):
+        self._setup_environment(
+            (
+                ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                ("IPFILTER_ENABLED", "True"),
+                ("PUBLIC_PATHS", "/public-test"),
+                ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
+            ),
+        )
+
+        response = self._make_request("/private-test")
+        self.assertEqual(response.status, 403)
+
 
 def good_config():
     return {
@@ -375,7 +388,7 @@ class AppConfigValidationTestCase(unittest.TestCase):
         try:
             get_ipfilter_config(["a"])
             self.fail("Validation should have failed")
-        except SchemaError as ex:
+        except ValidationError as ex:
             self.assertTrue("iprange('not-an-ip-range') should evaluate to True" in str(ex))
             self.assertTrue("Key 'IpRanges'" in str(ex))
 
@@ -400,5 +413,5 @@ class AppConfigValidationTestCase(unittest.TestCase):
         try:
             get_ipfilter_config(["a"])
             self.fail("Validation should have failed")
-        except SchemaError as ex:
+        except ValidationError as ex:
             self.assertTrue(message in str(ex))

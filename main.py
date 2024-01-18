@@ -128,6 +128,10 @@ def handle_request(u_path):
         except ValidationError as ex:
             logger.error(f"[%s] {ex}", request_id)
             return render_access_denied(client_ip, forwarded_url, request_id)
+        except Exception as ex:
+            logger.error(f"[%s] {ex}", request_id)
+            return render_access_denied(client_ip, forwarded_url, request_id)
+
 
         ip_in_whitelist = any(
             ip_address(client_ip) in ip_network(ip_range)
