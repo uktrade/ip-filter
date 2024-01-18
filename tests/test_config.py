@@ -7,6 +7,14 @@ from parameterized import parameterized
 from schema import SchemaError
 from tests.conftest import create_filter, create_origin, wait_until_connectable, create_appconfig_agent
 
+BAD_APP_CONFIG = """
+IpRanges:
+    - 1.2.hello.4/32
+SharedTokens:
+    - HeaderName: x-cdn-secret
+    - HeaderName: x-shared-secret
+      Value: my-other-secret
+"""
 
 class EnvironTestCase(unittest.TestCase):
     def test_missing_key_raises_keyerror(self):
@@ -268,6 +276,25 @@ class ConfigurationTestCase(unittest.TestCase):
         response = self._make_request()
 
         self.assertEqual(response.status, 200)
+
+    def test_ipfilter_enabled_and_misconfigured_app_config_rejects_traffic(self):
+        self._setup_environment(
+            (
+                ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                ("IPFILTER_ENABLED", "True"),
+                ("PUBLIC_PATHS", "/public-test"),
+                ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
+            ),
+        )
+        self.addCleanup(
+            create_appconfig_agent(
+                2772,
+                {"testapp:testenv:testconfig": BAD_APP_CONFIG},
+            )
+        )
+        wait_until_connectable(2772)
+        response = self._make_request("/private-test")
+        self.assertEqual(response.status, 403)
 
 
 def good_config():

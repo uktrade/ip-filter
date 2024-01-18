@@ -6,7 +6,6 @@ import urllib3
 import yaml
 
 from schema import Optional
-from schema import Or
 from schema import Schema
 from schema import SchemaError
 
@@ -126,7 +125,11 @@ def get_ipfilter_config(appconfig_paths: list[str]):
     shared_tokens = []
     for config_path in appconfig_paths:
         config = get_appconfig_configuration(config_path)
-        APPCONFIG_SCHEMA.validate(config)
+        try:
+            APPCONFIG_SCHEMA.validate(config)
+        except SchemaError as ex:
+            # logger.error(f'AppConfig validation error: "{ex}" for path {config_path}')
+            raise ex
 
         ips.extend(config.get("IpRanges", []))
         auth.extend(config.get("BasicAuth", []))

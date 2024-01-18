@@ -15,6 +15,7 @@ from flask.logging import default_handler
 
 from asim_formatter import ASIMFormatter
 from config import get_ipfilter_config
+from schema import SchemaError
 from utils import constant_time_is_equal
 
 HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]
@@ -94,6 +95,8 @@ def handle_request(u_path):
     protected_paths = app.config["PROTECTED_PATHS"]
     public_paths = app.config["PUBLIC_PATHS"]
 
+    # Question: Should the logic here be to allow public access to public paths unless they also match the protected paths?
+    # Just ignoring the PROPTECTED_PATHS could lead to a path being exposed publicly when the intention was to block access.
     if public_paths and protected_paths:
         # public and protected path settings are mutually exclusive. If both are enabled, we ignore the PROTECTED_PATHS
         # setting and emit a log message to indicate the that the IP Filter is
@@ -120,7 +123,10 @@ def handle_request(u_path):
     headers_to_remove = []
 
     if ip_filter_enabled_and_required_for_path:
-        ip_filter_rules = get_ipfilter_config(app.config["APPCONFIG_PROFILES"])
+        try:
+            ip_filter_rules = get_ipfilter_config(app.config["APPCONFIG_PROFILES"])
+        except SchemaError as ex:
+            return render_access_denied(client_ip, forwarded_url, request_id)
 
         ip_in_whitelist = any(
             ip_address(client_ip) in ip_network(ip_range)
