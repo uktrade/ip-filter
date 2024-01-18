@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import patch
 
 import urllib3
+
 from config import Environ, get_ipfilter_config
 from parameterized import parameterized
 from schema import SchemaError

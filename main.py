@@ -14,7 +14,7 @@ from flask import request
 from flask.logging import default_handler
 
 from asim_formatter import ASIMFormatter
-from config import get_ipfilter_config
+from config import get_ipfilter_config, ValidationError
 from schema import SchemaError
 from utils import constant_time_is_equal
 
@@ -125,7 +125,8 @@ def handle_request(u_path):
     if ip_filter_enabled_and_required_for_path:
         try:
             ip_filter_rules = get_ipfilter_config(app.config["APPCONFIG_PROFILES"])
-        except SchemaError as ex:
+        except ValidationError as ex:
+            logger.error(f"[%s] {ex}", request_id)
             return render_access_denied(client_ip, forwarded_url, request_id)
 
         ip_in_whitelist = any(

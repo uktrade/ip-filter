@@ -117,6 +117,10 @@ APPCONFIG_SCHEMA = Schema(
 )
 
 
+class ValidationError(Exception):
+    pass
+
+
 def get_ipfilter_config(appconfig_paths: list[str]):
     """Retrieve a list of app config configurations and combine them into a
     single dict."""
@@ -128,8 +132,7 @@ def get_ipfilter_config(appconfig_paths: list[str]):
         try:
             APPCONFIG_SCHEMA.validate(config)
         except SchemaError as ex:
-            # logger.error(f'AppConfig validation error: "{ex}" for path {config_path}')
-            raise ex
+            raise ValidationError(f'AppConfig validation error: "{ex}" for path {config_path}')
 
         ips.extend(config.get("IpRanges", []))
         auth.extend(config.get("BasicAuth", []))
