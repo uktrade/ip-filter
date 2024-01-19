@@ -10,7 +10,7 @@ from tests.conftest import create_filter, create_origin, wait_until_connectable,
 
 BAD_APP_CONFIG = """
 IpRanges:
-    - 1.2.hello.4/32
+    - 27
 SharedTokens:
     - HeaderName: x-cdn-secret
     - HeaderName: x-shared-secret
@@ -414,14 +414,14 @@ class AppConfigValidationTestCase(unittest.TestCase):
 
     def test_get_ipfilter_config_bad_ip_range_raises_exception(self, appconfig):
         conf = good_config()
-        conf["IpRanges"].append("not-an-ip-range")
+        conf["IpRanges"].append(55)
         appconfig.return_value = conf
 
         try:
             get_ipfilter_config(["a"])
             self.fail("Validation should have failed")
         except ValidationError as ex:
-            self.assertTrue("iprange('not-an-ip-range') should evaluate to True" in str(ex))
+            self.assertTrue("55 should be instance of 'str'" in str(ex))
             self.assertTrue("Key 'IpRanges'" in str(ex))
 
     @parameterized.expand(

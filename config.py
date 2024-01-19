@@ -95,16 +95,9 @@ def get_appconfig_configuration(appconfig_path):
     raise AppConfigError(f"AppConfig for {appconfig_path} not found.")
 
 
-def iprange(ip: str):
-    """
-    Do we use this or just str? Do we need to consider IPv6? Does the expression need to be more accurate?
-    """
-    return bool(re.match(r"[0-9.]+(/\d+)?", ip))
-
-
 APPCONFIG_SCHEMA = Schema(
     {
-        Optional("IpRanges"): [iprange],
+        Optional("IpRanges"): [str],
         Optional("BasicAuth"): [
             {
                 "Path": str,
