@@ -1,5 +1,6 @@
 import re
 from collections import UserDict
+from ipaddress import ip_network
 from urllib.parse import urljoin
 
 import urllib3
@@ -97,7 +98,7 @@ def get_appconfig_configuration(appconfig_path):
 
 APPCONFIG_SCHEMA = Schema(
     {
-        Optional("IpRanges"): [str],
+        Optional("IpRanges"): [ip_network],
         Optional("BasicAuth"): [
             {
                 "Path": str,

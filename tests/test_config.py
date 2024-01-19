@@ -1,4 +1,5 @@
 import json
+import re
 import unittest
 from unittest.mock import patch
 
@@ -10,7 +11,7 @@ from tests.conftest import create_filter, create_origin, wait_until_connectable,
 
 BAD_APP_CONFIG = """
 IpRanges:
-    - 27
+    - 1.2.hello.4/32
 SharedTokens:
     - HeaderName: x-cdn-secret
     - HeaderName: x-shared-secret
@@ -345,7 +346,7 @@ class ConfigurationTestCase(unittest.TestCase):
 
 def good_config():
     return {
-        "IpRanges": ["1.1.1.1/32", "2.2.2.2"],
+        "IpRanges": ["1.1.1.1/32", "2.2.2.2", "2001:db8:abcd:0012::0/64"],
         "BasicAuth": [
             {
                 "Path": "/__some_path",
@@ -374,7 +375,7 @@ class AppConfigValidationTestCase(unittest.TestCase):
 
     def test_get_ipfilter_config_multiple_paths_aggregate_results(self, appconfig):
         config_a = good_config()
-        config_b = {"IpRanges": ["3.3.3.3/24"]}
+        config_b = {"IpRanges": ["3.3.3.0/24"]}
         config_c = {"BasicAuth": [
             {
                 "Path": "/__some_other_path",
@@ -392,7 +393,7 @@ class AppConfigValidationTestCase(unittest.TestCase):
 
         actual = get_ipfilter_config(["a", "b", "c", "d"])
 
-        self.assertEqual(actual["ips"], ["1.1.1.1/32", "2.2.2.2", "3.3.3.3/24"])
+        self.assertEqual(actual["ips"], ["1.1.1.1/32", "2.2.2.2", "2001:db8:abcd:0012::0/64", "3.3.3.0/24"])
         self.assertEqual(actual["auth"], [config_a["BasicAuth"][0], config_c["BasicAuth"][0]])
         self.assertEqual(actual["shared_tokens"], [config_a["SharedTokens"][0], config_d["SharedTokens"][0]])
 
@@ -412,17 +413,25 @@ class AppConfigValidationTestCase(unittest.TestCase):
         actual = get_ipfilter_config(["a"])
         self.assertEqual(actual, {"ips": [], "auth": [], "shared_tokens": []})
 
-    def test_get_ipfilter_config_bad_ip_range_raises_exception(self, appconfig):
+    @parameterized.expand(
+        [
+            ("not-an-ip-range", "does not appear to be an IPv4 or IPv6 network"),
+            ("1.1.1.1/16", "has host bits set"),
+            ("2001:db8:abcd:12:bad::/32", "has host bits set"),
+        ]
+    )
+    def test_get_ipfilter_config_bad_ip_range_raises_exception(self, appconfig, ip_range, exp_error):
         conf = good_config()
-        conf["IpRanges"].append(55)
+        conf["IpRanges"].append(ip_range)
         appconfig.return_value = conf
 
         try:
             get_ipfilter_config(["a"])
             self.fail("Validation should have failed")
         except ValidationError as ex:
-            self.assertTrue("55 should be instance of 'str'" in str(ex))
             self.assertTrue("Key 'IpRanges'" in str(ex))
+            self.assertTrue(f"ip_network('{ip_range}') raised ValueError" in str(ex))
+            self.assertTrue(exp_error in str(ex))
 
     @parameterized.expand(
         [
