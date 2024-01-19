@@ -1,12 +1,10 @@
-import json
-import re
 import unittest
 from unittest.mock import patch
 
 import urllib3
+from parameterized import parameterized
 
 from config import Environ, get_ipfilter_config, ValidationError
-from parameterized import parameterized
 from tests.conftest import create_filter, create_origin, wait_until_connectable, create_appconfig_agent
 
 BAD_APP_CONFIG = """

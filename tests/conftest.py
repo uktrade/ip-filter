@@ -10,8 +10,8 @@ from io import BytesIO
 
 from flask import Flask
 from flask import Response
-from flask import request
 from flask import abort
+from flask import request
 from multiprocess import Process
 from werkzeug.routing import Rule
 from werkzeug.serving import WSGIRequestHandler

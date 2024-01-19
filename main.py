@@ -15,7 +15,6 @@ from flask.logging import default_handler
 
 from asim_formatter import ASIMFormatter
 from config import get_ipfilter_config, ValidationError
-from schema import SchemaError
 from utils import constant_time_is_equal
 
 HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]

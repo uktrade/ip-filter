@@ -2,10 +2,7 @@ import base64
 import itertools
 import json
 import logging
-import os
-import signal
 import socket
-import sys
 import time
 import unittest
 import urllib.parse
@@ -16,12 +13,8 @@ import pytest
 import urllib3
 from flask import Flask
 from flask import Response
-from flask import abort
 from flask import request
-from multiprocess import Process
 from parameterized import parameterized
-from werkzeug.routing import Rule
-from werkzeug.serving import WSGIRequestHandler
 
 from asim_formatter import ASIMFormatter
 from config import Environ

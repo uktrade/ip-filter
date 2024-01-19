@@ -1,14 +1,13 @@
-import re
 from collections import UserDict
 from ipaddress import ip_network
 from urllib.parse import urljoin
 
 import urllib3
 import yaml
-
 from schema import Optional
 from schema import Schema
 from schema import SchemaError
+
 
 class Environ(UserDict):
     """Handle app configuration from os.environ with support for copilot
