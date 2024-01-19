@@ -1,3 +1,4 @@
+import json
 import unittest
 from unittest.mock import patch
 
@@ -5,7 +6,6 @@ import urllib3
 
 from config import Environ, get_ipfilter_config, ValidationError
 from parameterized import parameterized
-from schema import SchemaError
 from tests.conftest import create_filter, create_origin, wait_until_connectable, create_appconfig_agent
 
 BAD_APP_CONFIG = """
@@ -15,6 +15,11 @@ SharedTokens:
     - HeaderName: x-cdn-secret
     - HeaderName: x-shared-secret
       Value: my-other-secret
+"""
+
+MINIMAL_APP_CONFIG = """
+IpRanges:
+    - 1.1.1.1/32
 """
 
 class EnvironTestCase(unittest.TestCase):
@@ -141,14 +146,16 @@ class ConfigurationTestCase(unittest.TestCase):
         wait_until_connectable(8080)
         wait_until_connectable(8081)
 
-    def _make_request(self, request_path="/"):
+    def _make_request(self, request_path="/", additional_headers={}):
+        headers = {
+                "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+                "connection": "close",
+            }
+        headers.update(additional_headers)
         response = urllib3.PoolManager().request(
             "GET",
             url=f"http://127.0.0.1:8080{request_path}",
-            headers={
-                "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-                "connection": "close",
-            },
+            headers=headers,
             body=b"some-data",
         )
 
@@ -263,10 +270,6 @@ class ConfigurationTestCase(unittest.TestCase):
         self.assertEqual(response.status, 403)
 
     def test_appconfig_agent_with_valid_ip(self):
-        self.addCleanup(create_appconfig_agent(2772))
-
-        wait_until_connectable(2772)
-
         self._setup_environment(
             (
                 ("COPILOT_ENVIRONMENT_NAME", "staging"),
@@ -274,6 +277,9 @@ class ConfigurationTestCase(unittest.TestCase):
                 ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
             )
         )
+        self.addCleanup(create_appconfig_agent(2772, {"testapp:testenv:testconfig": MINIMAL_APP_CONFIG}))
+        wait_until_connectable(2772)
+
         response = self._make_request()
 
         self.assertEqual(response.status, 200)
@@ -306,6 +312,32 @@ class ConfigurationTestCase(unittest.TestCase):
                 ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
             ),
         )
+
+        response = self._make_request("/private-test")
+        self.assertEqual(response.status, 403)
+
+
+    def test_ipfilter_enabled_and_missing_app_config_rejects_traffic(self):
+        """
+        Missing app config will get a 404 back from the appconfig agent. This is
+        simulated here by passing in empty appconfig to the agent during setup.
+        """
+        self._setup_environment(
+            (
+                ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                ("IPFILTER_ENABLED", "True"),
+                ("PUBLIC_PATHS", "/public-test"),
+                ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
+            ),
+        )
+        self.addCleanup(
+            create_appconfig_agent(
+                2772,
+                {},
+                True
+            )
+        )
+        wait_until_connectable(2772)
 
         response = self._make_request("/private-test")
         self.assertEqual(response.status, 403)

@@ -167,7 +167,7 @@ def wait_until_connectable(port, max_attempts=1000):
                 raise
             time.sleep(0.01)
 
-def create_appconfig_agent(port, config_map=None):
+def create_appconfig_agent(port, config_map=None, override_config=False):
     default_config_map = {
         "testapp:testenv:testconfig": """
 IpRanges:
@@ -207,7 +207,10 @@ BasicAuth: []
     def config_view(application, environment, configuration):
         key = f"{application}:{environment}:{configuration}"
 
-        config = default_config_map | (config_map or {})
+        if override_config:
+            config = config_map
+        else:
+            config = default_config_map | (config_map or {})
 
         if key not in config:
             abort(404)

@@ -81,12 +81,18 @@ def get_appconfig_configuration(appconfig_path):
         f"/applications/{application}/environments/{environment}/configurations/{configuration}",
     )
 
-    response = urllib3.PoolManager().request(
-        "GET",
-        url=url,
-    )
+    try:
+        response = urllib3.PoolManager().request(
+            "GET",
+            url=url,
+        )
+    except Exception as ex:
+        raise AppConfigError(ex)
 
-    return yaml.safe_load(response.data)
+    if response.status == 200:
+        return yaml.safe_load(response.data)
+
+    raise AppConfigError(f"AppConfig for {appconfig_path} not found.")
 
 
 def iprange(ip: str):
@@ -118,6 +124,10 @@ APPCONFIG_SCHEMA = Schema(
 
 
 class ValidationError(Exception):
+    pass
+
+
+class AppConfigError(Exception):
     pass
 
 
