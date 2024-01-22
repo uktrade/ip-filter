@@ -128,13 +128,13 @@ APPCONFIG_PROFILES: default:rule:set
 
 1. Clone the repository:
 
-   ```
+   ```shell
    git clone https://github.com/uktrade/ip-filter.git && cd ip-filter
    ```
 
 2. Install the required dependencies:
 
-   ```
+   ```shell
    pip install poetry && poetry install && poetry run pre-commit install
    ```
 
