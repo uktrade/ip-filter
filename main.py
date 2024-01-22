@@ -14,6 +14,7 @@ from flask import request
 from flask.logging import default_handler
 
 from asim_formatter import ASIMFormatter
+from config import ValidationError
 from config import get_ipfilter_config
 from utils import constant_time_is_equal
 
@@ -21,7 +22,6 @@ HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]
 
 app = Flask(__name__, template_folder=Path(__file__).parent, static_folder=None)
 app.config.from_object("settings")
-
 
 PoolClass = (
     urllib3.HTTPConnectionPool
@@ -37,7 +37,7 @@ logger.addHandler(default_handler)
 request_id_alphabet = string.ascii_letters + string.digits
 
 
-def render_access_denied(client_ip, forwarded_url, request_id):
+def render_access_denied(client_ip, forwarded_url, request_id, reason=""):
     return (
         render_template(
             "access-denied.html",
@@ -46,7 +46,8 @@ def render_access_denied(client_ip, forwarded_url, request_id):
             email=app.config["EMAIL"],
             request_id=request_id,
             forwarded_url=forwarded_url,
-        ),
+        )
+        + reason,
         403,
     )
 
@@ -121,7 +122,14 @@ def handle_request(u_path):
     headers_to_remove = []
 
     if ip_filter_enabled_and_required_for_path:
-        ip_filter_rules = get_ipfilter_config(app.config["APPCONFIG_PROFILES"])
+        try:
+            ip_filter_rules = get_ipfilter_config(app.config["APPCONFIG_PROFILES"])
+        except ValidationError as ex:
+            logger.error(f"[%s] {ex}", request_id)
+            return render_access_denied(client_ip, forwarded_url, request_id)
+        except Exception as ex:
+            logger.error(f"[%s] {ex}", request_id)
+            return render_access_denied(client_ip, forwarded_url, request_id, str(ex))
 
         ip_in_whitelist = any(
             ip_address(client_ip) in ip_network(ip_range)

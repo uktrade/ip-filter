@@ -1,8 +1,12 @@
 from collections import UserDict
+from ipaddress import ip_network
 from urllib.parse import urljoin
 
 import urllib3
 import yaml
+from schema import Optional
+from schema import Schema
+from schema import SchemaError
 
 
 class Environ(UserDict):
@@ -77,22 +81,61 @@ def get_appconfig_configuration(appconfig_path):
         f"/applications/{application}/environments/{environment}/configurations/{configuration}",
     )
 
-    response = urllib3.PoolManager().request(
-        "GET",
-        url=url,
-    )
+    try:
+        response = urllib3.PoolManager().request(
+            "GET",
+            url=url,
+        )
+    except Exception as ex:
+        raise AppConfigError(ex)
 
-    return yaml.safe_load(response.data)
+    if response.status == 200:
+        return yaml.safe_load(response.data)
+
+    raise AppConfigError(f"AppConfig for {appconfig_path} not found.")
 
 
-def get_ipfilter_config(appconfig_paths):
-    """Retreive a list of app config configurations and combine them into a
+APPCONFIG_SCHEMA = Schema(
+    {
+        Optional("IpRanges"): [ip_network],
+        Optional("BasicAuth"): [
+            {
+                "Path": str,
+                "Username": str,
+                "Password": str,
+            }
+        ],
+        Optional("SharedTokens"): [
+            {
+                "HeaderName": str,
+                "Value": str,
+            }
+        ],
+        Optional(str): object
+    }
+)
+
+
+class ValidationError(Exception):
+    pass
+
+
+class AppConfigError(Exception):
+    pass
+
+
+def get_ipfilter_config(appconfig_paths: list[str]):
+    """Retrieve a list of app config configurations and combine them into a
     single dict."""
     ips = []
     auth = []
     shared_tokens = []
     for config_path in appconfig_paths:
         config = get_appconfig_configuration(config_path)
+        try:
+            APPCONFIG_SCHEMA.validate(config)
+        except SchemaError as ex:
+            raise ValidationError(f'AppConfig validation error: "{ex}" for path {config_path}')
 
         ips.extend(config.get("IpRanges", []))
         auth.extend(config.get("BasicAuth", []))
