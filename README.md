@@ -122,3 +122,39 @@ SERVER: localhost:8080
 APPCONFIG_PROFILES: default:rule:set
 ```
 
+## Contributing to ip-filter
+
+### Getting started
+
+1. Clone the repository:
+
+   ```
+   git clone https://github.com/uktrade/ip-filter.git && cd ip-filter
+   ```
+
+2. Install the required dependencies:
+
+   ```
+   pip install poetry && poetry install && poetry run pre-commit install
+   ```
+
+### Testing
+
+#### Automated testing
+
+Run `poetry run pytest` in the root directory to run all tests.
+
+There is also a `tests.sh` script which will run all the tests with the standard unittest module
+and also run the coverage report.
+
+#### Coverage
+
+Coverage information can be run locally with: `poetry run coverage run pytest`. 
+This will run pytest using the python coverage module and create a bunch of .coverage files.
+
+Combine the coverage files with `coverage combine` and then get a report with: `poetry run coverage report`.
+
+Note: coverage doesn't currently see that end-to-end style tests actually cover anything (presumably because
+the application spins up in a separate process). It would be worth us going forward trying to move a lot of the 
+coverage the end-to-end tests provide into unit tests, as it would provide more useful coverage data as well as speeding
+up the test suite.
