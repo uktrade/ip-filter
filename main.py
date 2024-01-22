@@ -14,7 +14,8 @@ from flask import request
 from flask.logging import default_handler
 
 from asim_formatter import ASIMFormatter
-from config import get_ipfilter_config, ValidationError
+from config import ValidationError
+from config import get_ipfilter_config
 from utils import constant_time_is_equal
 
 HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]
@@ -45,7 +46,8 @@ def render_access_denied(client_ip, forwarded_url, request_id, reason=""):
             email=app.config["EMAIL"],
             request_id=request_id,
             forwarded_url=forwarded_url,
-        ) + reason,
+        )
+        + reason,
         403,
     )
 
@@ -94,8 +96,6 @@ def handle_request(u_path):
     protected_paths = app.config["PROTECTED_PATHS"]
     public_paths = app.config["PUBLIC_PATHS"]
 
-    # Question: Should the logic here be to allow public access to public paths unless they also match the protected paths?
-    # Just ignoring the PROPTECTED_PATHS could lead to a path being exposed publicly when the intention was to block access.
     if public_paths and protected_paths:
         # public and protected path settings are mutually exclusive. If both are enabled, we ignore the PROTECTED_PATHS
         # setting and emit a log message to indicate the that the IP Filter is

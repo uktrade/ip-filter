@@ -31,7 +31,7 @@ def create_filter(port, env=()):
 
     default_env = {
         "PORT": str(port),
-        "EMAIL_NAME": "the Department for International Trade WebOps team",
+        "EMAIL_NAME": "The Department for International Trade WebOps team",
         "EMAIL": "test@test.test",
         "LOG_LEVEL": "DEBUG",
         "DEBUG": "True",
@@ -128,17 +128,17 @@ def create_origin(port):
 
         response_header_prefix = "x-echo-response-header-"
         headers = (
-                [
-                    ("x-echo-method", request.method),
-                    ("x-echo-raw-uri", _extract_path(request.environ["RAW_URI"])),
-                    ("x-echo-remote-port", request.environ["REMOTE_PORT"]),
-                ]
-                + [("x-echo-header-" + k, v) for k, v in request.headers.items()]
-                + [
-                    (k[len(response_header_prefix) :], v)
-                    for k, v in request.headers.items()
-                    if k.lower().startswith(response_header_prefix)
-                ]
+            [
+                ("x-echo-method", request.method),
+                ("x-echo-raw-uri", _extract_path(request.environ["RAW_URI"])),
+                ("x-echo-remote-port", request.environ["REMOTE_PORT"]),
+            ]
+            + [("x-echo-header-" + k, v) for k, v in request.headers.items()]
+            + [
+                (k[len(response_header_prefix) :], v)
+                for k, v in request.headers.items()
+                if k.lower().startswith(response_header_prefix)
+            ]
         )
 
         return Response(
@@ -166,6 +166,7 @@ def wait_until_connectable(port, max_attempts=1000):
             if i == max_attempts - 1:
                 raise
             time.sleep(0.01)
+
 
 def create_appconfig_agent(port, config_map=None, override_config=False):
     default_config_map = {
@@ -229,5 +230,3 @@ BasicAuth: []
     process.start()
 
     return stop
-
-

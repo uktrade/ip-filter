@@ -9,7 +9,6 @@ import urllib.parse
 import uuid
 from datetime import datetime
 
-import pytest
 import urllib3
 from flask import Flask
 from flask import Response
@@ -18,7 +17,10 @@ from parameterized import parameterized
 
 from asim_formatter import ASIMFormatter
 from config import Environ
-from tests.conftest import create_filter, create_origin, wait_until_connectable, create_appconfig_agent
+from tests.conftest import create_appconfig_agent
+from tests.conftest import create_filter
+from tests.conftest import create_origin
+from tests.conftest import wait_until_connectable
 
 SHARED_HEADER_CONFIG = """
 IpRanges:
@@ -159,8 +161,8 @@ class ConfigurationTestCase(unittest.TestCase):
     """Tests covering the configuration logic."""
 
     def _setup_environment(
-            self,
-            env=(),
+        self,
+        env=(),
     ):
         default_env = (
             ("SERVER", "localhost:8081"),
@@ -1066,16 +1068,16 @@ class ProxyTestCase(unittest.TestCase):
             set_cookie, "my_name=my_value_a; Domain=.localtest.me; Path=/path"
         )
         has_cookie = (
-                cookie_header
-                in urllib3.PoolManager()
-                .request(
-            "GET",
-            url="http://127.0.0.1:8080/",
-            headers={
-                "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-            },
-        )
-                .headers
+            cookie_header
+            in urllib3.PoolManager()
+            .request(
+                "GET",
+                url="http://127.0.0.1:8080/",
+                headers={
+                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+                },
+            )
+            .headers
         )
         self.assertFalse(has_cookie)
 
@@ -1126,7 +1128,6 @@ class ProxyTestCase(unittest.TestCase):
         self.assertEqual(response.headers["content-encoding"], "gzip")
         self.assertIn("content-length", response.headers)
 
-    @pytest.mark.skip()
     def test_slow_upload(self):
         self.addCleanup(create_appconfig_agent(2772))
         self.addCleanup(
@@ -1589,11 +1590,11 @@ class BasicAuthTestCase(unittest.TestCase):
     """Tests covering basic auth responses."""
 
     def get_basic_auth_response(
-            self,
-            host="somehost.com",
-            request_path=None,
-            x_forwarded_for="1.2.3.4, 1.1.1.1, 1.1.1.1",
-            credentials=b"my-user:my-secret",
+        self,
+        host="somehost.com",
+        request_path=None,
+        x_forwarded_for="1.2.3.4, 1.1.1.1, 1.1.1.1",
+        credentials=b"my-user:my-secret",
     ):
         return urllib3.PoolManager().request(
             "GET",
@@ -1602,7 +1603,7 @@ class BasicAuthTestCase(unittest.TestCase):
                 "host": host,
                 "x-forwarded-for": x_forwarded_for,
                 "authorization": "Basic "
-                                 + base64.b64encode(credentials).decode("utf-8"),
+                + base64.b64encode(credentials).decode("utf-8"),
             },
         )
 
@@ -1946,9 +1947,9 @@ class SharedTokenTestCase(unittest.TestCase):
             custom_headers = {"x-cdn-secret": "my-secret"}
 
         headers = {
-                      "x-cf-forwarded-url": "http://somehost.com/",
-                      "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-                  } | custom_headers
+            "x-cf-forwarded-url": "http://somehost.com/",
+            "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+        } | custom_headers
 
         return urllib3.PoolManager().request(
             "GET",
@@ -1997,7 +1998,7 @@ class SharedTokenTestCase(unittest.TestCase):
         ]
     )
     def test_second_shared_token_header_respected(
-            self, custom_headers, expected_status
+        self, custom_headers, expected_status
     ):
         self.addCleanup(
             create_appconfig_agent(
@@ -2125,15 +2126,15 @@ class LoggingTestCase(unittest.TestCase):
     def test_asim_formatter_get_request_dict(self):
         self.app = Flask(__name__)
         with self.app.test_request_context(
-                method="GET",
-                path="/example_route",
-                query_string="param1=value1&param2=value2",
-                headers={
-                    "Content-Type": "application/json",
-                    "X-Forwarded-For": "1.1.1.1",
-                    "X-Amzn-Trace-Id": "123testid",
-                },
-                data='{"key": "value"}',
+            method="GET",
+            path="/example_route",
+            query_string="param1=value1&param2=value2",
+            headers={
+                "Content-Type": "application/json",
+                "X-Forwarded-For": "1.1.1.1",
+                "X-Amzn-Trace-Id": "123testid",
+            },
+            data='{"key": "value"}',
         ):
             request_dict = ASIMFormatter().get_request_dict(request)
 
@@ -2190,11 +2191,11 @@ class LoggingTestCase(unittest.TestCase):
         log_time = datetime.utcfromtimestamp(log_record.created).isoformat()
 
         with self.app.test_request_context(
-                method="GET",
-                path="/example_route",
-                query_string="param1=value1&param2=value2",
-                headers={"Content-Type": "application/json", "X-Forwarded-For": "1.1.1.1"},
-                data='{"key": "value"}',
+            method="GET",
+            path="/example_route",
+            query_string="param1=value1&param2=value2",
+            headers={"Content-Type": "application/json", "X-Forwarded-For": "1.1.1.1"},
+            data='{"key": "value"}',
         ):
             formatted_log = ASIMFormatter().format(log_record)
             print(formatted_log)
@@ -2229,5 +2230,3 @@ class LoggingTestCase(unittest.TestCase):
                     "HttpStatusCode": response.status_code,
                 }
             )
-
-
