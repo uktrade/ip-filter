@@ -8,3 +8,8 @@ phases:
   build:
     commands:
         - /work/build.sh
+
+  test:
+    commands:
+        - pwd
+        - ls -al
