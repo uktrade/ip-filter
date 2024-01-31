@@ -5,11 +5,12 @@ env:
       ECR_VISIBILITY: PUBLIC
 
 phases:
-  build:
-    commands:
-        - /work/build.sh
-
   test:
     commands:
-        - pwd
-        - ls -al
+      - pwd
+      - ls -al
+
+  build:
+    commands:
+      - echo "BUILD WOULD HAPPEN NOW"
+      # - /work/build.sh
