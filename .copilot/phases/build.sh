@@ -4,10 +4,11 @@
 set -e
 
 # Add commands below to run as part of the build phase
-buildCommand="/work/cli build"
+buildCommand="/work/cli build --send-notifications"
 
 if [ "${CODEBUILD_WEBHOOK_HEAD_REF}" == "refs/heads/master" ]; then
     buildCommand="${buildCommand} --publish --send-notifications"
 fi
 
-echo "${buildCommand}"
+echo "Running build command: ${buildCommand}"
+$buildCommand

@@ -1,8 +1,8 @@
 version: 0.2
-# env:
-#   parameter-store:
-#     SLACK_CHANNEL_ID: /codebuild/slack_oauth_channel
-#     SLACK_TOKEN: /codebuild/slack_oauth_token
+env:
+  parameter-store:
+    SLACK_CHANNEL_ID: /codebuild/slack_oauth_channel
+    SLACK_TOKEN: /codebuild/slack_oauth_token
 phases:
   install:
     commands:
