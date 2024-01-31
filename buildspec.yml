@@ -22,7 +22,6 @@ phases:
         if [ -f .copilot/phases/build.sh ]; then 
           bash .copilot/phases/build.sh; 
         fi
-      # - /work/cli build --publish --send-notifications
   post_build:
     commands:
       - |
