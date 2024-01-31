@@ -5,4 +5,3 @@ set -e
 
 # Add commands below to run as part of the build phase
 echo "BUILD WOULD HAPPEN NOW"
-exit 0
