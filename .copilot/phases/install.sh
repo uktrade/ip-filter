@@ -4,6 +4,7 @@
 set -e
 
 # Add commands below to run as part of the install phase
+env
 python --version
 pip install poetry
 poetry install --no-root
