@@ -5,4 +5,4 @@ set -e
 
 # Add commands below to run as part of the install phase
 python --version
-pip install -r requirements_test.txt
+poetry install --no-root
