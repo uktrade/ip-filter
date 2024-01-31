@@ -5,7 +5,7 @@ env:
       ECR_VISIBILITY: PUBLIC
 
 phases:
-  test:
+  pre_build:
     commands:
       - pwd
       - ls -al
