@@ -3,6 +3,7 @@ import itertools
 import json
 import logging
 import socket
+import subprocess
 import time
 import unittest
 import urllib.parse
@@ -631,7 +632,7 @@ class ProxyTestCase(unittest.TestCase):
         self.assertNotEqual(remote_port_1, remote_port_2)
 
     @unittest.skip(
-        "THis test hangs indefinitely, likely because `gunicorn --timeout 0`"
+        "This test hangs indefinitely, likely because `gunicorn --timeout 0`"
     )
     def test_no_issue_if_request_unfinished(self):
         self.addCleanup(create_appconfig_agent(2772))
@@ -2095,6 +2096,13 @@ class SharedTokenTestCase(unittest.TestCase):
 
 
 class LoggingTestCase(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        result = subprocess.run(
+            ["poetry", "version"], stdout=subprocess.PIPE, text=True
+        )
+        cls.ip_filter_version = result.stdout.split()[1]
+
     def test_asim_formatter_get_log_dict(self):
         formatter = ASIMFormatter()
         log_record = logging.LogRecord(
@@ -2120,7 +2128,7 @@ class LoggingTestCase(unittest.TestCase):
             "EventOriginalSeverity": log_record.levelname,  # duplicate of above?
             "EventSchema": "WebSession",
             "EventSchemaVersion": "0.2.6",
-            # Other fields...
+            "IpFilterVersion": self.ip_filter_version,
         }
 
     def test_asim_formatter_get_request_dict(self):
@@ -2210,6 +2218,7 @@ class LoggingTestCase(unittest.TestCase):
                     "EventOriginalSeverity": log_record.levelname,  # duplicate of above?
                     "EventSchema": "WebSession",
                     "EventSchemaVersion": "0.2.6",
+                    "IpFilterVersion": self.ip_filter_version,
                     "Url": request.url,
                     "UrlOriginal": request.url,
                     "HttpVersion": request.environ.get("SERVER_PROTOCOL"),
