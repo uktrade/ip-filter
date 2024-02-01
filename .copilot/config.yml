@@ -1,4 +1,4 @@
-repository: ip-filter
+repository: public.ecr.aws/uktrade/ci-image-builder
 builder:
   name: paketobuildpacks/builder-jammy-base
   version: 0.4.240
