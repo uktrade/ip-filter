@@ -2,6 +2,7 @@ import base64
 import itertools
 import json
 import logging
+import os
 import socket
 import subprocess
 import time
@@ -9,6 +10,7 @@ import unittest
 import urllib.parse
 import uuid
 from datetime import datetime
+from unittest.mock import patch
 
 import urllib3
 from flask import Flask
@@ -22,6 +24,7 @@ from tests.conftest import create_appconfig_agent
 from tests.conftest import create_filter
 from tests.conftest import create_origin
 from tests.conftest import wait_until_connectable
+from utils import get_package_version
 
 SHARED_HEADER_CONFIG = """
 IpRanges:
@@ -2103,6 +2106,11 @@ class LoggingTestCase(unittest.TestCase):
         )
         cls.ip_filter_version = result.stdout.split()[1]
 
+        # env vars needed to instantiate app
+        os.environ["COPILOT_ENVIRONMENT_NAME"] = "test"
+        os.environ["SERVER"] = "localhost:8081"
+        os.environ["EMAIL"] = "testemail"
+
     def test_asim_formatter_get_log_dict(self):
         formatter = ASIMFormatter()
         log_record = logging.LogRecord(
@@ -2239,3 +2247,15 @@ class LoggingTestCase(unittest.TestCase):
                     "HttpStatusCode": response.status_code,
                 }
             )
+
+    @patch("main.cache")
+    def test_get_package_version_no_cache(self, cache):
+        cache.get.return_value = None
+
+        assert get_package_version() == self.ip_filter_version
+
+    @patch("main.cache")
+    def test_get_package_version_cache(self, cache):
+        cache.get.return_value = "6.6.6"
+
+        assert get_package_version() == "6.6.6"

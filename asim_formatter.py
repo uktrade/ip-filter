@@ -3,11 +3,12 @@ import logging
 import os
 from datetime import datetime
 
-import toml
 from flask import Request
 from flask import Response
 from flask import has_request_context
 from flask import request
+
+from utils import get_package_version
 
 
 class ASIMFormatter(logging.Formatter):
@@ -34,12 +35,6 @@ class ASIMFormatter(logging.Formatter):
         }
         return map[log_level]
 
-    def _get_package_version(self) -> str:
-        with open("pyproject.toml", "r") as toml_file:
-            data = toml.load(toml_file)
-
-        return data.get("tool", {}).get("poetry", {}).get("version")
-
     def get_log_dict(self, record: logging.LogRecord) -> dict:
         log_time = datetime.utcfromtimestamp(record.created).isoformat()
 
@@ -53,7 +48,7 @@ class ASIMFormatter(logging.Formatter):
             "EventOriginalSeverity": record.levelname,  # duplicate of above?
             "EventSchema": "WebSession",
             "EventSchemaVersion": "0.2.6",
-            "IpFilterVersion": self._get_package_version(),
+            "IpFilterVersion": get_package_version(),
         }
 
         # TODO: look at expanding to include other fields from schema: https://learn.microsoft.com/en-us/azure/sentinel/normalization-schema-web
