@@ -8,7 +8,7 @@ CODEBUILD_GIT_BRANCH=`git branch -a --contains HEAD | sed -n 2p | awk '{ printf 
 CODEBUILD_GIT_BRANCH=${CODEBUILD_GIT_BRANCH#remotes/origin/}
 echo "${CODEBUILD_GIT_BRANCH}"
 buildCommand="/work/cli build"
-if [ "${CODEBUILD_GIT_BRANCH}" == "DBTP-369-run-unit-tests-in-codebuild-pt3" ]; then
+if [ "${CODEBUILD_GIT_BRANCH}" == "main" ]; then
     buildCommand="${buildCommand} --publish --send-notifications"
 fi
 
