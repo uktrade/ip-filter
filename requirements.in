@@ -1,6 +1,0 @@
-flask==2.3.2
-gunicorn
-urllib3
-jinja2
-pyyaml
-
