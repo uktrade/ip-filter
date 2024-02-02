@@ -4,9 +4,11 @@
 set -e
 
 # Add commands below to run as part of the install phase
-echo "$(git symbolic-ref HEAD --short)"
+CODEBUILD_GIT_BRANCH=`git branch -a --contains HEAD | sed -n 2p | awk '{ printf $1 }'`
+CODEBUILD_GIT_BRANCH=${CODEBUILD_GIT_BRANCH#remotes/origin/}
+echo "${CODEBUILD_GIT_BRANCH}"
 buildCommand="/work/cli build"
-if [ "$(git symbolic-ref HEAD --short)" == "DBTP-369-run-unit-tests-in-codebuild-pt3" ]; then
+if [ "$(CODEBUILD_GIT_BRANCH)" == "DBTP-369-run-unit-tests-in-codebuild-pt3" ]; then
     buildCommand="${buildCommand} --publish --send-notifications"
 fi
 
