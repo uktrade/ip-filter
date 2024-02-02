@@ -2,12 +2,15 @@ import base64
 import itertools
 import json
 import logging
+import os
 import socket
+import subprocess
 import time
 import unittest
 import urllib.parse
 import uuid
 from datetime import datetime
+from unittest.mock import patch
 
 import urllib3
 from flask import Flask
@@ -21,6 +24,7 @@ from tests.conftest import create_appconfig_agent
 from tests.conftest import create_filter
 from tests.conftest import create_origin
 from tests.conftest import wait_until_connectable
+from utils import get_package_version
 
 SHARED_HEADER_CONFIG = """
 IpRanges:
@@ -631,7 +635,7 @@ class ProxyTestCase(unittest.TestCase):
         self.assertNotEqual(remote_port_1, remote_port_2)
 
     @unittest.skip(
-        "THis test hangs indefinitely, likely because `gunicorn --timeout 0`"
+        "This test hangs indefinitely, likely because `gunicorn --timeout 0`"
     )
     def test_no_issue_if_request_unfinished(self):
         self.addCleanup(create_appconfig_agent(2772))
@@ -2095,6 +2099,18 @@ class SharedTokenTestCase(unittest.TestCase):
 
 
 class LoggingTestCase(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        result = subprocess.run(
+            ["poetry", "version"], stdout=subprocess.PIPE, text=True
+        )
+        cls.ip_filter_version = result.stdout.split()[1]
+
+        # env vars needed to instantiate app
+        os.environ["COPILOT_ENVIRONMENT_NAME"] = "test"
+        os.environ["SERVER"] = "localhost:8081"
+        os.environ["EMAIL"] = "testemail"
+
     def test_asim_formatter_get_log_dict(self):
         formatter = ASIMFormatter()
         log_record = logging.LogRecord(
@@ -2120,7 +2136,7 @@ class LoggingTestCase(unittest.TestCase):
             "EventOriginalSeverity": log_record.levelname,  # duplicate of above?
             "EventSchema": "WebSession",
             "EventSchemaVersion": "0.2.6",
-            # Other fields...
+            "IpFilterVersion": self.ip_filter_version,
         }
 
     def test_asim_formatter_get_request_dict(self):
@@ -2210,6 +2226,7 @@ class LoggingTestCase(unittest.TestCase):
                     "EventOriginalSeverity": log_record.levelname,  # duplicate of above?
                     "EventSchema": "WebSession",
                     "EventSchemaVersion": "0.2.6",
+                    "IpFilterVersion": self.ip_filter_version,
                     "Url": request.url,
                     "UrlOriginal": request.url,
                     "HttpVersion": request.environ.get("SERVER_PROTOCOL"),
@@ -2230,3 +2247,15 @@ class LoggingTestCase(unittest.TestCase):
                     "HttpStatusCode": response.status_code,
                 }
             )
+
+    @patch("main.cache")
+    def test_get_package_version_no_cache(self, cache):
+        cache.get.return_value = None
+
+        assert get_package_version() == self.ip_filter_version
+
+    @patch("main.cache")
+    def test_get_package_version_cache(self, cache):
+        cache.get.return_value = "6.6.6"
+
+        assert get_package_version() == "6.6.6"

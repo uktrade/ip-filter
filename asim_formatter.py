@@ -8,6 +8,8 @@ from flask import Response
 from flask import has_request_context
 from flask import request
 
+from utils import get_package_version
+
 
 class ASIMFormatter(logging.Formatter):
     def _get_event_result(self, response: Response) -> str:
@@ -46,6 +48,7 @@ class ASIMFormatter(logging.Formatter):
             "EventOriginalSeverity": record.levelname,  # duplicate of above?
             "EventSchema": "WebSession",
             "EventSchemaVersion": "0.2.6",
+            "IpFilterVersion": get_package_version(),
         }
 
         # TODO: look at expanding to include other fields from schema: https://learn.microsoft.com/en-us/azure/sentinel/normalization-schema-web

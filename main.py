@@ -12,6 +12,7 @@ from flask import Response
 from flask import render_template
 from flask import request
 from flask.logging import default_handler
+from flask_caching import Cache
 
 from asim_formatter import ASIMFormatter
 from config import ValidationError
@@ -22,6 +23,7 @@ HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]
 
 app = Flask(__name__, template_folder=Path(__file__).parent, static_folder=None)
 app.config.from_object("settings")
+cache = Cache(app)
 
 PoolClass = (
     urllib3.HTTPConnectionPool
