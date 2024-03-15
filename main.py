@@ -133,9 +133,13 @@ def handle_request(u_path):
             logger.error(f"[%s] {ex}", request_id)
             return render_access_denied(client_ip, forwarded_url, request_id, str(ex))
 
-        ip_in_whitelist = any(
-            ip_address(client_ip) in ip_network(ip_range)
-            for ip_range in ip_filter_rules["ips"]
+        additional_ip_list = app.config["ADDITIONAL_IP_LIST"]
+        ip_in_whitelist = (
+            any(
+                ip_address(client_ip) in ip_network(ip_range)
+                for ip_range in ip_filter_rules["ips"]
+            )
+            or client_ip in additional_ip_list
         )
 
         shared_tokens = ip_filter_rules["shared_tokens"]

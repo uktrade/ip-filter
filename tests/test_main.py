@@ -314,6 +314,23 @@ class ConfigurationTestCase(unittest.TestCase):
 
         self.assertEqual(response.status, 200)
 
+    def test_ipfilter_enabled_allow_additional_ip_addresses(self):
+        self.addCleanup(create_appconfig_agent(2772))
+
+        wait_until_connectable(2772)
+
+        self._setup_environment(
+            (
+                ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                ("IPFILTER_ENABLED", "True"),
+                ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
+                ("ADDITIONAL_IP_LIST", "1.2.3.10"),
+            )
+        )
+        response = self._make_request()
+
+        self.assertEqual(response.status, 200)
+
 
 class ProxyTestCase(unittest.TestCase):
     """Tests that cover the ip filter's proxy functionality."""
