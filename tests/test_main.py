@@ -319,7 +319,7 @@ class ConfigurationTestCase(unittest.TestCase):
             (
                 ("COPILOT_ENVIRONMENT_NAME", "staging"),
                 ("IPFILTER_ENABLED", "True"),
-                ("ADDITIONAL_IP_LIST", "1.3.2.4, 1.3.2.5"),
+                ("ADDITIONAL_IP_LIST", "1.1.1.1"),
                 ("PUBLIC_PATHS", "/public-test"),
             )
         )
