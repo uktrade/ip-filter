@@ -314,6 +314,19 @@ class ConfigurationTestCase(unittest.TestCase):
 
         self.assertEqual(response.status, 200)
 
+    def test_ipfilter_enabled_allow_additional_ip_addresses(self):
+        self._setup_environment(
+            (
+                ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                ("IPFILTER_ENABLED", "True"),
+                ("ADDITIONAL_IP_LIST", "1.1.1.1"),
+                ("PUBLIC_PATHS", "/public-test"),
+            )
+        )
+
+        response = self._make_request("/protected-test")
+        self.assertEqual(response.status, 200)
+
 
 class ProxyTestCase(unittest.TestCase):
     """Tests that cover the ip filter's proxy functionality."""

@@ -43,3 +43,7 @@ PROTECTED_PATHS = env.list(
 )
 
 ENABLE_XRAY = env.bool("ENABLE_XRAY", default=False)
+
+ADDITIONAL_IP_LIST = env.list(
+    "ADDITIONAL_IP_LIST", default=[], allow_environment_override=True
+)
