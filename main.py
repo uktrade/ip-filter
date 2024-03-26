@@ -13,6 +13,7 @@ from flask import render_template
 from flask import request
 from flask.logging import default_handler
 from flask_caching import Cache
+from opentelemetry.instrumentation.wsgi import OpenTelemetryMiddleware
 
 from asim_formatter import ASIMFormatter
 from config import ValidationError
@@ -25,6 +26,14 @@ app = Flask(__name__, template_folder=Path(__file__).parent, static_folder=None)
 app.config.from_object("settings")
 cache = Cache(app)
 
+if app.config["ENABLE_XRAY"]:
+    app.wsgi_app = OpenTelemetryMiddleware(app.wsgi_app)
+    # xray_client = boto3.client('xray')
+    # sampling_rules = xray_client.get_sampling_rules()['SamplingRuleRecords']
+    # xray_recorder.configure(service="ipfilter", sampler=LocalSampler(), sampling_rules=sampling_rules)
+    # XRayMiddleware(app, xray_recorder)
+
+
 PoolClass = (
     urllib3.HTTPConnectionPool
     if app.config["SERVER_PROTO"] == "http"
@@ -36,6 +45,7 @@ default_handler.setFormatter(ASIMFormatter())
 logging.basicConfig(stream=sys.stdout, level=app.config["LOG_LEVEL"])
 logger = logging.getLogger(__name__)
 logger.addHandler(default_handler)
+
 request_id_alphabet = string.ascii_letters + string.digits
 
 
