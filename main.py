@@ -7,14 +7,13 @@ from pathlib import Path
 from random import choices
 
 import urllib3
-from aws_xray_sdk.core import xray_recorder
-from aws_xray_sdk.ext.flask.middleware import XRayMiddleware
 from flask import Flask
 from flask import Response
 from flask import render_template
 from flask import request
 from flask.logging import default_handler
 from flask_caching import Cache
+from opentelemetry.instrumentation.wsgi import OpenTelemetryMiddleware
 
 from asim_formatter import ASIMFormatter
 from config import ValidationError
@@ -28,8 +27,12 @@ app.config.from_object("settings")
 cache = Cache(app)
 
 if app.config["ENABLE_XRAY"]:
-    xray_recorder.configure(service="ipfilter")
-    XRayMiddleware(app, xray_recorder)
+    app.wsgi_app = OpenTelemetryMiddleware(app.wsgi_app)
+    # xray_client = boto3.client('xray')
+    # sampling_rules = xray_client.get_sampling_rules()['SamplingRuleRecords']
+    # xray_recorder.configure(service="ipfilter", sampler=LocalSampler(), sampling_rules=sampling_rules)
+    # XRayMiddleware(app, xray_recorder)
+
 
 PoolClass = (
     urllib3.HTTPConnectionPool
