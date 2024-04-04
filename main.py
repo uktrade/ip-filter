@@ -28,10 +28,6 @@ cache = Cache(app)
 
 if app.config["ENABLE_XRAY"]:
     app.wsgi_app = OpenTelemetryMiddleware(app.wsgi_app)
-    # xray_client = boto3.client('xray')
-    # sampling_rules = xray_client.get_sampling_rules()['SamplingRuleRecords']
-    # xray_recorder.configure(service="ipfilter", sampler=LocalSampler(), sampling_rules=sampling_rules)
-    # XRayMiddleware(app, xray_recorder)
 
 
 PoolClass = (
