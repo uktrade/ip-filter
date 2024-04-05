@@ -41,6 +41,18 @@ PUBLIC_PATHS = env.list("PUBLIC_PATHS", default=[], allow_environment_override=T
 PROTECTED_PATHS = env.list(
     "PROTECTED_PATHS", default=[], allow_environment_override=True
 )
+
+ENABLE_XRAY = env.bool("ENABLE_XRAY", default=False)
+
+if ENABLE_XRAY:
+    OTEL_PROPAGATORS = env.get("OTEL_PROPAGATORS")
+    OTEL_PYTHON_ID_GENERATOR = env.get("OTEL_PYTHON_ID_GENERATOR")
+    OTEL_SERVICE_NAME = env.get("OTEL_SERVICE_NAME")
+    OTEL_METRICS_EXPORTER = env.get("OTEL_METRICS_EXPORTER")
+    OTEL_TRACES_EXPORTER = env.get("OTEL_TRACES_EXPORTER")
+    OTEL_TRACES_SAMPLER = env.get("OTEL_TRACES_SAMPLER")
+    OTEL_TRACES_SAMPLER_ARG = env.get("OTEL_TRACES_SAMPLER_ARG")
+
 ADDITIONAL_IP_LIST = env.list(
     "ADDITIONAL_IP_LIST", default=[], allow_environment_override=True
 )
