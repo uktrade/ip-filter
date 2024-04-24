@@ -1,7 +1,5 @@
 FROM python:3.11
 
-MAINTAINER tools@digital.trade.gov.uk
-
 RUN apt-get update && apt-get install -qq build-essential \
                                           libpq-dev \
                                           python3-dev \
@@ -12,11 +10,10 @@ RUN apt-get update && apt-get install -qq build-essential \
 
 WORKDIR /app
 
+COPY pyproject.toml /app
+RUN pip install poetry && poetry add honcho && poetry install
+
+
 COPY . /app
 
-RUN pip install -r /app/requirements.txt
-
-RUN pip install honcho
-
-CMD honcho start
-
+CMD ["poetry", "run", "honcho", "start"]
