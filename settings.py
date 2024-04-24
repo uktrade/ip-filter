@@ -6,7 +6,7 @@ from config import Environ
 
 env = Environ(os.environ)
 
-LOG_LEVEL = env.get("LOG_LEVEL", "WARN")
+LOG_LEVEL = env.get("LOG_LEVEL", "INFO")
 
 logging.basicConfig(stream=sys.stdout, level=LOG_LEVEL)
 logger = logging.getLogger(__name__)
@@ -56,3 +56,4 @@ if ENABLE_XRAY:
 ADDITIONAL_IP_LIST = env.list(
     "ADDITIONAL_IP_LIST", default=[], allow_environment_override=True
 )
+
