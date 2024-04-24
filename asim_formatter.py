@@ -63,7 +63,7 @@ class ASIMFormatter(logging.Formatter):
             "HttpContentFormat": request.mimetype,
             "HttpReferrer": request.referrer,
             "HttpUserAgent": str(request.user_agent),
-            "HttpRequestXff": request.headers["X-Forwarded-For"],
+            "HttpRequestXff": request.headers.get("X-Forwarded-For"),
             "HttpResponseTime": "N/A",
             "HttpHost": request.host,
             # TODO: add better support for multi-file upload and other file fields e.g. FileSize
