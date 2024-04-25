@@ -1,16 +1,23 @@
 services:
+  nginx:
+    image: public.ecr.aws/uktrade/nginx-reverse-proxy:latest
+    ports:
+      - "9999:443"
+    environment:
+      SERVER: ipfilter:8000
   ipfilter:
     build: .
     ports:
       - "8000:8000"
     environment:
       PORT: 8000
-      COPILOT_ENVIRONMENT: staging
+      COPILOT_APPLICATION_NAME: localtest
+      COPILOT_ENVIRONMENT_NAME: dev
       EMAIL_NAME: 'The Department for International Trade WebOps team'
       EMAIL: test@test.test
-      LOG_LEVEL: DEBUG
-      ORIGIN_HOSTNAME: localhost:8080
-      ORIGIN_PROTO: http
+      LOG_LEVEL: INFO
+      SERVER: app:8080
+      #SENTRY_DSN: https://.... 
   app:
     image: nginx:latest
     ports:

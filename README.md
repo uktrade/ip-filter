@@ -35,7 +35,7 @@ The following are settings that apply globally.
 | `SERVER_PROTO` | The protocol used to communicate to the origin | `https`
 | `EMAIL` | The email address shown to users on authorisation failure | `my.email@domain.test`
 | `EMAIL_NAME` | The email address shown to users on authorisation failure | `DBT`
-| `LOG_LEVEL` | The Python log level | `WARN`
+| `LOG_LEVEL` | The Python log level | `INFO`
 | `PORT` | The port for the application to listen on | `8080`
 | `IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX` | The index of the client IP in the XFF header, defaults to -1 | -1
 | `APPCONFIG_URL` | The URL of the local AppConfig agent | http://localhost:2772
@@ -121,6 +121,12 @@ PORT: 8000
 SERVER: localhost:8080
 APPCONFIG_PROFILES: default:rule:set
 ```
+
+### Sentry
+
+If a `SENTRY_DSN` environment variable is supplied the ip-filter will integrate with Sentry.  There is an ip-filter project in Sentry and the ip-filter tags Sentry exceptions with an environment with this format: ${app-nane}-{$env_name}. 
+
+Speak to SRE if you need the ip-filter Sentry DSN.
 
 ## Contributing to ip-filter
 

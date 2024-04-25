@@ -1,4 +1,5 @@
 import logging
+import os
 import string
 import sys
 from ipaddress import ip_address
@@ -14,13 +15,32 @@ from flask import request
 from flask.logging import default_handler
 from flask_caching import Cache
 from opentelemetry.instrumentation.wsgi import OpenTelemetryMiddleware
+import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
 
 from asim_formatter import ASIMFormatter
 from config import ValidationError
 from config import get_ipfilter_config
 from utils import constant_time_is_equal
 
+sentry_dsn = os.getenv("SENTRY_DSN")
+
+if sentry_dsn:
+    application = os.getenv("COPILOT_APPLICATION_NAME", "no-application")
+    environment = os.getenv("COPILOT_ENVIRONMENT_NAME", "no-environment")
+    env_name = f"{application}-{environment}"
+
+    sentry_sdk.init(
+        dsn=sentry_dsn,
+        enable_tracing=True,
+        traces_sample_rate=1.0,
+        environment=env_name,
+        integrations=[FlaskIntegration()],
+    )
+
+
 HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]
+
 
 app = Flask(__name__, template_folder=Path(__file__).parent, static_folder=None)
 app.config.from_object("settings")
