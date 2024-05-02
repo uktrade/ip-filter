@@ -36,6 +36,7 @@ The following are settings that apply globally.
 | `EMAIL` | The email address shown to users on authorisation failure | `my.email@domain.test`
 | `EMAIL_NAME` | The email address shown to users on authorisation failure | `DBT`
 | `LOG_LEVEL` | The Python log level | `INFO`
+| `URLLIB3_LOG_LEVEL` | The log level for the urllib3 library | `WARN`
 | `PORT` | The port for the application to listen on | `8080`
 | `IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX` | The index of the client IP in the XFF header, defaults to -1 | -1
 | `APPCONFIG_URL` | The URL of the local AppConfig agent | http://localhost:2772
@@ -124,9 +125,11 @@ APPCONFIG_PROFILES: default:rule:set
 
 ### Sentry
 
-If a `SENTRY_DSN` environment variable is supplied the ip-filter will integrate with Sentry.  There is an ip-filter project in Sentry and the ip-filter tags Sentry exceptions with an environment with this format: ${app-nane}-{$env_name}. 
+If a `SENTRY_DSN` environment variable is supplied the ip-filter will integrate with Sentry.  There is an existing ip-filter project in Sentry and the ip-filter sets the Sentry environment to: ${app-nane}-{$env_name}. 
 
-Speak to SRE if you need the ip-filter Sentry DSN.
+Set `SENTRY_ENABLE_TRACING=True` if you want to enable performance tracing.  You'll also need to set the sample rate using the `SENTRY_TRACING_SAMPLE_RATE` environment variable.   A rate of 1.0 means that 100% of requests will send performance data to Sentry.
+
+Speak to SRE to get the ip-filter Sentry DSN.
 
 ## Contributing to ip-filter
 
