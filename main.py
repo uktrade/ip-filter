@@ -23,8 +23,8 @@ from config import get_ipfilter_config
 from utils import constant_time_is_equal
 
 sentry_dsn = os.getenv("SENTRY_DSN")
-sentry_enable_tracing = os.getenv("SENTRY_ENABLE_TRADING", "False") == "True"
-sentry_traces_sample_rate = float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "1.0"))
+sentry_enable_tracing = os.getenv("SENTRY_ENABLE_TRACING", "False") == "True"
+sentry_tracing_sample_rate = float(os.getenv("SENTRY_TRACING_SAMPLE_RATE", "1.0"))
 
 
 if sentry_dsn:
@@ -35,7 +35,7 @@ if sentry_dsn:
     sentry_sdk.init(
         dsn=sentry_dsn,
         enable_tracing=sentry_enable_tracing,
-        traces_sample_rate=sentry_traces_sample_rate,
+        traces_sample_rate=sentry_tracing_sample_rate,
         environment=env_name,
         integrations=[FlaskIntegration()],
     )
