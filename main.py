@@ -65,6 +65,9 @@ logger = logging.getLogger(__name__)
 logger.addHandler(default_handler)
 request_id_alphabet = string.ascii_letters + string.digits
 
+urllib3_log_level = logging.getLevelName(os.getenv("URLLIB3_LOG_LEVEL", "WARN"))
+logging.getLogger("urllib3").setLevel(urllib3_log_level)
+
 
 def render_access_denied(client_ip, forwarded_url, request_id, reason=""):
     return (
