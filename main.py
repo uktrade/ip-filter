@@ -14,7 +14,6 @@ from flask import render_template
 from flask import request
 from flask.logging import default_handler
 from flask_caching import Cache
-from opentelemetry.instrumentation.wsgi import OpenTelemetryMiddleware
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 
@@ -48,9 +47,6 @@ HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]
 app = Flask(__name__, template_folder=Path(__file__).parent, static_folder=None)
 app.config.from_object("settings")
 cache = Cache(app)
-
-if app.config["ENABLE_XRAY"]:
-    app.wsgi_app = OpenTelemetryMiddleware(app.wsgi_app)
 
 PoolClass = (
     urllib3.HTTPConnectionPool
