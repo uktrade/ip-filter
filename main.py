@@ -14,7 +14,6 @@ from flask import render_template
 from flask import request
 from flask.logging import default_handler
 from flask_caching import Cache
-from opentelemetry.instrumentation.wsgi import OpenTelemetryMiddleware
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 
@@ -24,6 +23,9 @@ from config import get_ipfilter_config
 from utils import constant_time_is_equal
 
 sentry_dsn = os.getenv("SENTRY_DSN")
+sentry_enable_tracing = os.getenv("SENTRY_ENABLE_TRACING", "False") == "True"
+sentry_tracing_sample_rate = float(os.getenv("SENTRY_TRACING_SAMPLE_RATE", "1.0"))
+
 
 if sentry_dsn:
     application = os.getenv("COPILOT_APPLICATION_NAME", "no-application")
@@ -32,8 +34,8 @@ if sentry_dsn:
 
     sentry_sdk.init(
         dsn=sentry_dsn,
-        enable_tracing=True,
-        traces_sample_rate=1.0,
+        enable_tracing=sentry_enable_tracing,
+        traces_sample_rate=sentry_tracing_sample_rate,
         environment=env_name,
         integrations=[FlaskIntegration()],
     )
@@ -46,15 +48,12 @@ app = Flask(__name__, template_folder=Path(__file__).parent, static_folder=None)
 app.config.from_object("settings")
 cache = Cache(app)
 
-if app.config["ENABLE_XRAY"]:
-    app.wsgi_app = OpenTelemetryMiddleware(app.wsgi_app)
-
 PoolClass = (
     urllib3.HTTPConnectionPool
     if app.config["SERVER_PROTO"] == "http"
     else urllib3.HTTPSConnectionPool
 )
-http = PoolClass(app.config["SERVER"], maxsize=1000)
+http = PoolClass(app.config["SERVER"], maxsize=10)
 
 default_handler.setFormatter(ASIMFormatter())
 logging.basicConfig(stream=sys.stdout, level=app.config["LOG_LEVEL"])
