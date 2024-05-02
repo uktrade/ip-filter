@@ -62,6 +62,11 @@ logger = logging.getLogger(__name__)
 logger.addHandler(default_handler)
 request_id_alphabet = string.ascii_letters + string.digits
 
+urllib3_log_level = logging.getLevelName(os.getenv("URLLIB3_LOG_LEVEL", "WARN"))
+urllib3_logger = logging.getLogger("urllib3")
+urllib3_logger.setLevel(urllib3_log_level)
+urllib3_logger.removeHandler(default_handler)
+
 
 def render_access_denied(client_ip, forwarded_url, request_id, reason=""):
     return (
@@ -264,6 +269,7 @@ def handle_request(u_path):
         preload_content=False,
         redirect=False,
         assert_same_host=False,
+        retries=False,
         body=downstream_data(),
     )
     logger.info("[%s] Origin response status: %s", request_id, origin_response.status)
