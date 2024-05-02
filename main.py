@@ -57,7 +57,7 @@ PoolClass = (
     if app.config["SERVER_PROTO"] == "http"
     else urllib3.HTTPSConnectionPool
 )
-http = PoolClass(app.config["SERVER"], maxsize=1000)
+http = PoolClass(app.config["SERVER"], maxsize=10)
 
 default_handler.setFormatter(ASIMFormatter())
 logging.basicConfig(stream=sys.stdout, level=app.config["LOG_LEVEL"])
