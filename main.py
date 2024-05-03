@@ -298,6 +298,7 @@ def handle_request(u_path):
     logger.info("[%s] Origin response status: %s", request_id, origin_response.status)
 
     def release_conn():
+        origin_response.close()
         origin_response.release_conn()
         logger.info("[%s] End", request_id)
 
