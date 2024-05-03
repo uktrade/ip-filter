@@ -41,6 +41,8 @@ PUBLIC_PATHS = env.list("PUBLIC_PATHS", default=[], allow_environment_override=T
 PROTECTED_PATHS = env.list(
     "PROTECTED_PATHS", default=[], allow_environment_override=True
 )
+PUB_HOST_LIST = env.list("PUB_HOST_LIST", default=[], allow_environment_override=True)
+PRIV_HOST_LIST = env.list("PRIV_HOST_LIST", default=[], allow_environment_override=True)
 
 ENABLE_XRAY = env.bool("ENABLE_XRAY", default=False)
 
@@ -56,4 +58,3 @@ if ENABLE_XRAY:
 ADDITIONAL_IP_LIST = env.list(
     "ADDITIONAL_IP_LIST", default=[], allow_environment_override=True
 )
-
