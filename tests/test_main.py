@@ -327,6 +327,74 @@ class ConfigurationTestCase(unittest.TestCase):
         response = self._make_request("/protected-test")
         self.assertEqual(response.status, 200)
 
+    def test_pub_host_preferred_when_pub_and_priv(self):
+        self._setup_environment(
+            (
+                ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                ("IPFILTER_ENABLED", "True"),
+                ("PUB_HOST_LIST", "127.0.0.1:8080"),
+                ("PRIV_HOST_LIST", "127.0.0.1:8080"),
+            )
+        )
+
+        response = self._make_request()
+
+        self.assertEqual(response.status, 200)
+
+    def test_host_in_pub_host_list(self):
+        self._setup_environment(
+            (
+                ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                ("IPFILTER_ENABLED", "True"),
+                ("PUB_HOST_LIST", "127.0.0.1:8080"),
+            )
+        )
+
+        response = self._make_request()
+
+        self.assertEqual(response.status, 200)
+
+    def test_host_in_priv_host_list(self):
+        self._setup_environment(
+            (
+                ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                ("IPFILTER_ENABLED", "True"),
+                ("PRIV_HOST_LIST", "127.0.0.1:8081"),
+            )
+        )
+
+        response = self._make_request()
+
+        self.assertEqual(response.status, 200)
+
+    def test_pub_host_list_and_protected_path(self):
+        self._setup_environment(
+            (
+                ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                ("IPFILTER_ENABLED", "True"),
+                ("PUB_HOST_LIST", "127.0.0.1:8080"),
+                ("PROTECTED_PATHS", "/admin"),
+            )
+        )
+
+        response = self._make_request("/admin")
+
+        self.assertEqual(response.status, 403)
+
+    def test_priv_host_list_and_public_path(self):
+        self._setup_environment(
+            (
+                ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                ("IPFILTER_ENABLED", "True"),
+                ("PRIV_HOST_LIST", "127.0.0.1:8080"),
+                ("PUBLIC_PATHS", "/"),
+            )
+        )
+
+        response = self._make_request()
+
+        self.assertEqual(response.status, 403)
+
 
 class ProxyTestCase(unittest.TestCase):
     """Tests that cover the ip filter's proxy functionality."""

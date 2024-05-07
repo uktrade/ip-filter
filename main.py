@@ -7,6 +7,7 @@ from ipaddress import ip_network
 from pathlib import Path
 from random import choices
 
+import sentry_sdk
 import urllib3
 from flask import Flask
 from flask import Response
@@ -14,7 +15,6 @@ from flask import render_template
 from flask import request
 from flask.logging import default_handler
 from flask_caching import Cache
-import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 
 from asim_formatter import ASIMFormatter
@@ -135,6 +135,15 @@ def handle_request(u_path):
         )
         protected_paths = []
 
+    priv_host_list = app.config["PRIV_HOST_LIST"]
+    pub_host_list = app.config["PUB_HOST_LIST"]
+
+    if priv_host_list and pub_host_list:
+        logger.warning(
+            "Configuration error: PRIV_HOST_LIST and PUB_HOST_LIST are mutually exclusive; ignoring PRIV_HOST_LIST"
+        )
+        priv_host_list = []
+
     ip_filter_enabled_and_required_for_path = app.config["IPFILTER_ENABLED"]
 
     # Paths are public by default unless listed in the PROTECTED_PATHS env var
@@ -144,8 +153,23 @@ def handle_request(u_path):
         ip_filter_enabled_and_required_for_path = False
 
     # Paths are protected by default unless listed in the PUBLIC_PATHS env var
-    if bool(public_paths) and any(
-        request.path.startswith(path) for path in public_paths
+    if (
+        bool(public_paths)
+        and any(request.path.startswith(path) for path in public_paths)
+        and (not bool(priv_host_list) or request.host not in priv_host_list)
+    ):
+        ip_filter_enabled_and_required_for_path = False
+
+    if bool(priv_host_list) and request.host not in priv_host_list:
+        ip_filter_enabled_and_required_for_path = False
+
+    if (
+        bool(pub_host_list)
+        and request.host in pub_host_list
+        and (
+            not bool(protected_paths)
+            or not any(request.path.startswith(path) for path in protected_paths)
+        )
     ):
         ip_filter_enabled_and_required_for_path = False
 
