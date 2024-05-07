@@ -153,8 +153,23 @@ def handle_request(u_path):
         ip_filter_enabled_and_required_for_path = False
 
     # Paths are protected by default unless listed in the PUBLIC_PATHS env var
-    if bool(public_paths) and any(
-        request.path.startswith(path) for path in public_paths
+    if (
+        bool(public_paths)
+        and any(request.path.startswith(path) for path in public_paths)
+        and (not bool(priv_host_list) or request.host not in priv_host_list)
+    ):
+        ip_filter_enabled_and_required_for_path = False
+
+    if bool(priv_host_list) and request.host not in priv_host_list:
+        ip_filter_enabled_and_required_for_path = False
+
+    if (
+        bool(pub_host_list)
+        and request.host in pub_host_list
+        and (
+            not bool(protected_paths)
+            or not any(request.path.startswith(path) for path in protected_paths)
+        )
     ):
         ip_filter_enabled_and_required_for_path = False
 
@@ -296,6 +311,7 @@ def handle_request(u_path):
     logger.info("[%s] Origin response status: %s", request_id, origin_response.status)
 
     def release_conn():
+        origin_response.close()
         origin_response.release_conn()
         logger.info("[%s] End", request_id)
 
