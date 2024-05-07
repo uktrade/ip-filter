@@ -387,13 +387,13 @@ class ConfigurationTestCase(unittest.TestCase):
                 ("COPILOT_ENVIRONMENT_NAME", "staging"),
                 ("IPFILTER_ENABLED", "True"),
                 ("PRIV_HOST_LIST", "127.0.0.1:8080"),
-                ("PUBLIC_PATHS", "/"),
+                ("PUBLIC_PATHS", "/healthcheck"),
             )
         )
 
-        response = self._make_request()
+        response = self._make_request("/healthcheck")
 
-        self.assertEqual(response.status, 403)
+        self.assertEqual(response.status, 200)
 
 
 class ProxyTestCase(unittest.TestCase):
