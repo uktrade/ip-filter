@@ -17,7 +17,6 @@ from flask.logging import default_handler
 from flask_caching import Cache
 from sentry_sdk.integrations.flask import FlaskIntegration
 
-from asim_formatter import ASIMFormatter
 from config import ValidationError
 from config import get_ipfilter_config
 from utils import constant_time_is_equal
@@ -55,10 +54,8 @@ PoolClass = (
 )
 http = PoolClass(app.config["SERVER"], maxsize=10)
 
-default_handler.setFormatter(ASIMFormatter())
 logging.basicConfig(stream=sys.stdout, level=app.config["LOG_LEVEL"])
 logger = logging.getLogger(__name__)
-logger.addHandler(default_handler)
 request_id_alphabet = string.ascii_letters + string.digits
 
 urllib3_log_level = logging.getLevelName(os.getenv("URLLIB3_LOG_LEVEL", "WARN"))
