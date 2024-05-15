@@ -66,12 +66,15 @@ class ASIMFormatter(logging.Formatter):
             "HttpRequestXff": request.headers.get("X-Forwarded-For"),
             "HttpResponseTime": "N/A",
             "HttpHost": request.host,
-            # TODO: add better support for multi-file upload and other file fields e.g. FileSize
-            "FileName": self._get_file_name(request),
             "AdditionalFields": {
                 "TraceHeaders": {},
             },
         }
+
+        content_type = request.headers.get("Content-Type")
+        if content_type and content_type == "multipart/form-data":
+            # TODO: add better support for multi-file upload and other file fields e.g. FileSize
+            request_dict["Filename"] = self._get_file_name(request)
 
         for trace_header in os.environ.get("DLFA_TRACE_HEADERS", ("X-Amzn-Trace-Id",)):
             request_dict["AdditionalFields"]["TraceHeaders"][
