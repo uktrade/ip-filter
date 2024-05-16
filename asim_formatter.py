@@ -17,14 +17,6 @@ class ASIMFormatter(logging.Formatter):
 
         return event_result
 
-    def _get_file_name(self, request: Request) -> str:
-        if not request.files:
-            return "N/A"
-        if len(request.files.keys()) == 1:
-            return request.files.keys()[0]
-
-        return ";".join(request.files.keys()[0])
-
     def _get_event_severity(self, log_level: str) -> str:
         map = {
             "DEBUG": "Informational",
@@ -70,11 +62,6 @@ class ASIMFormatter(logging.Formatter):
                 "TraceHeaders": {},
             },
         }
-
-        content_type = request.headers.get("Content-Type")
-        if content_type and content_type == "multipart/form-data":
-            # TODO: add better support for multi-file upload and other file fields e.g. FileSize
-            request_dict["Filename"] = self._get_file_name(request)
 
         for trace_header in os.environ.get("DLFA_TRACE_HEADERS", ("X-Amzn-Trace-Id",)):
             request_dict["AdditionalFields"]["TraceHeaders"][
