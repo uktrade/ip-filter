@@ -17,6 +17,14 @@ class ASIMFormatter(logging.Formatter):
 
         return event_result
 
+    def _get_file_name(self, response: Response) -> str:
+        content_disposition = response.headers.get("Content-Disposition")
+
+        if content_disposition:
+            return content_disposition.split("filename=")[-1].strip('"')
+
+        return "N/A"
+
     def _get_event_severity(self, log_level: str) -> str:
         map = {
             "DEBUG": "Informational",
@@ -74,6 +82,7 @@ class ASIMFormatter(logging.Formatter):
         return {
             "EventResult": self._get_event_result(response),
             "EventResultDetails": response.status_code,
+            "FileName": self._get_file_name(response),
             "HttpStatusCode": response.status_code,
         }
 
