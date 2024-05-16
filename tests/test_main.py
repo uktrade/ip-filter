@@ -2247,7 +2247,6 @@ class LoggingTestCase(unittest.TestCase):
                 "HttpRequestXff": request.headers["X-Forwarded-For"],
                 "HttpResponseTime": "N/A",
                 "HttpHost": request.host,
-                "FileName": "N/A",
                 "AdditionalFields": {
                     "TraceHeaders": {"X-Amzn-Trace-Id": "123testid"},
                 },
@@ -2319,7 +2318,6 @@ class LoggingTestCase(unittest.TestCase):
                     "HttpRequestXff": request.headers["X-Forwarded-For"],
                     "HttpResponseTime": "N/A",
                     "HttpHost": request.host,
-                    "FileName": "N/A",
                     "AdditionalFields": {
                         "TraceHeaders": {"X-Amzn-Trace-Id": None},
                     },
