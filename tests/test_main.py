@@ -2247,7 +2247,6 @@ class LoggingTestCase(unittest.TestCase):
                 "HttpRequestXff": request.headers["X-Forwarded-For"],
                 "HttpResponseTime": "N/A",
                 "HttpHost": request.host,
-                "FileName": "N/A",
                 "AdditionalFields": {
                     "TraceHeaders": {"X-Amzn-Trace-Id": "123testid"},
                 },
@@ -2256,7 +2255,10 @@ class LoggingTestCase(unittest.TestCase):
     def test_asim_formatter_get_response_dict(self):
         response = Response(
             status=200,
-            headers={"Content-Type": "application/json"},
+            headers={
+                "Content-Type": "application/json",
+                "Content-Disposition": "attachment; filename=dummy.rtf",
+            },
             response='{"key": "value"}',
         )
 
@@ -2265,6 +2267,7 @@ class LoggingTestCase(unittest.TestCase):
         assert response_dict == {
             "EventResult": "Success",
             "EventResultDetails": response.status_code,
+            "FileName": "dummy.rtf",
             "HttpStatusCode": response.status_code,
         }
 
@@ -2319,12 +2322,12 @@ class LoggingTestCase(unittest.TestCase):
                     "HttpRequestXff": request.headers["X-Forwarded-For"],
                     "HttpResponseTime": "N/A",
                     "HttpHost": request.host,
-                    "FileName": "N/A",
                     "AdditionalFields": {
                         "TraceHeaders": {"X-Amzn-Trace-Id": None},
                     },
                     "EventResult": "Success",
                     "EventResultDetails": response.status_code,
+                    "FileName": "N/A",
                     "HttpStatusCode": response.status_code,
                 }
             )
