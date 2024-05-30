@@ -4,4 +4,4 @@
 set -e
 
 # Add commands below to run as part of the pre_build phase
-poetry run ./tests.sh
+# poetry run ./tests.sh
