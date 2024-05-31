@@ -7,6 +7,10 @@ set -e
 CODEBUILD_GIT_BRANCH=`git branch -a --contains HEAD | sed -n 2p | awk '{ printf $1 }'`
 CODEBUILD_GIT_BRANCH=${CODEBUILD_GIT_BRANCH#remotes/origin/}
 
+echo "$CODEBUILD_GIT_BRANCH"
+pwd
+
+
 buildCommand="/work/cli build"
 if [ "${CODEBUILD_GIT_BRANCH}" == "main" ]; then
     buildCommand="${buildCommand} --publish --send-notifications"

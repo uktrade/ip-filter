@@ -4,7 +4,6 @@
 set -e
 
 # Add commands below to run as part of the install phase
-pwd
 ls -al
 python --version
 
