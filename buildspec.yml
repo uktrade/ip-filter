@@ -18,6 +18,7 @@ phases:
         fi
   build:
     commands:
+      - codebuild-breakpoint
       - |
         if [ -f .copilot/phases/build.sh ]; then 
           bash .copilot/phases/build.sh; 
