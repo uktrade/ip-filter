@@ -35,7 +35,7 @@ echo "rev-parse long"
 git rev-parse HEAD
 echo
 echo ">> PYTHON ENV <<"
-python -c "import os;print(os.getenv('path').replace(';','\n'))"
+python -c "import os;print(os.environ)"
 echo ">>>>> END BUILD PHASE DEBUG <<<<<"
 
 buildCommand="/work/cli build"
