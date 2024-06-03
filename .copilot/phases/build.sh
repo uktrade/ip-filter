@@ -9,15 +9,16 @@ CODEBUILD_GIT_BRANCH=${CODEBUILD_GIT_BRANCH#remotes/origin/}
 
 echo ">>>>> BUILD PHASE DEBUG <<<<<"
 echo "$CODEBUILD_GIT_BRANCH"
+echo ">> PWD <<"
 pwd
-echo
-env
 ls -al
-ls -al /codebuild/local-cache/workspace/ad88d84512be7140d005045a32fe3dc291db492c9644c95fe897bc60e5e683dd/
-cat .copilot/config.yml
-echo
 cat .git
 echo
+echo ">> LOCAL-CACHE DIR <<"
+ls -al /codebuild/local-cache/workspace/ad88d84512be7140d005045a32fe3dc291db492c9644c95fe897bc60e5e683dd/
+cat .git
+echo
+cat .copilot/config.yml
 export GIT_DIR=$PWD
 echo
 env
@@ -26,6 +27,13 @@ env
 #rm -rf /codebuild/local-cache/workspace/ad88d84512be7140d005045a32fe3dc291db492c9644c95fe897bc60e5e683dd/
 #ECR_REPOSITORY=
 #export ADDITIONAL_ECR_REPOSITORY=public.ecr.aws/uktrade/ip-filter
+echo "RUNNING CI IMAGE BUILDER COMMANDS"
+echo "rev-parse short"
+git rev-parse --short HEAD
+echo
+echo "rev-parse long"
+git rev-parse HEAD
+echo
 echo ">>>>> END BUILD PHASE DEBUG <<<<<"
 
 buildCommand="/work/cli build"
