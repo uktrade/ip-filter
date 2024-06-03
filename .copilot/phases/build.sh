@@ -13,12 +13,12 @@ echo ">> PWD <<"
 pwd
 ls -al
 ls -al .git
-cat .git
+#cat .git
 echo
 echo ">> LOCAL-CACHE DIR <<"
 ls -al /codebuild/local-cache/workspace/ad88d84512be7140d005045a32fe3dc291db492c9644c95fe897bc60e5e683dd/
 ls -al .git
-cat .git
+#cat .git
 echo
 cat .copilot/config.yml
 #export GIT_DIR=$PWD
