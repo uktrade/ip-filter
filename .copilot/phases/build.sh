@@ -10,6 +10,8 @@ CODEBUILD_GIT_BRANCH=${CODEBUILD_GIT_BRANCH#remotes/origin/}
 echo ">>>>> BUILD PHASE DEBUG <<<<<"
 echo "$CODEBUILD_GIT_BRANCH"
 pwd
+echo
+env
 ls -al
 ls -al /codebuild/local-cache/workspace/ad88d84512be7140d005045a32fe3dc291db492c9644c95fe897bc60e5e683dd/
 cat .copilot/config.yml
