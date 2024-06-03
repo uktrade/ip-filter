@@ -19,7 +19,7 @@ ls -al /codebuild/local-cache/workspace/ad88d84512be7140d005045a32fe3dc291db492c
 cat .git
 echo
 cat .copilot/config.yml
-export GIT_DIR=$PWD
+#export GIT_DIR=$PWD
 echo
 env
 #echo
