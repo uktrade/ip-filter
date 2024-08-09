@@ -26,7 +26,7 @@ EMAIL_NAME = env.get("EMAIL_NAME", "DBT")
 EMAIL = env["EMAIL"]
 
 IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX = env.int(
-    "IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", default=-1
+    "IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX", default=-2
 )
 
 # These settings can be overridden per environment, e.g. if $COPILOT_ENVIRONMENT is set to "staging", then
