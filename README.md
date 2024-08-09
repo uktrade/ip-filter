@@ -38,7 +38,7 @@ The following are settings that apply globally.
 | `LOG_LEVEL` | The Python log level | `INFO`
 | `URLLIB3_LOG_LEVEL` | The log level for the urllib3 library | `WARN`
 | `PORT` | The port for the application to listen on | `8080`
-| `IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX` | The index of the client IP in the XFF header, defaults to -2 | -2
+| `IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX` | The index of the client IP in the XFF header, defaults to -1 | -1
 | `APPCONFIG_URL` | The URL of the local AppConfig agent | http://localhost:2772
 
 The following settings can be applied globally and overridden on a per environment basis.
