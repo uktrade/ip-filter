@@ -244,7 +244,6 @@ def handle_request(u_path):
 
         should_respond_ok_to_auth_request = (
             any_on_auth_path_and_ok
-            and ip_in_whitelist
             and shared_token_checks_passed
             and len(on_auth_path_and_ok)
         )
