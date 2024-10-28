@@ -4,7 +4,7 @@
     ".": {
         "release-type": "python",
         "include-v-in-tag": false,
-        "draft": true,
+        "draft": false,
         "pull-request-header": ":robot: Next release",
         "pull-request-footer": " "
     }
