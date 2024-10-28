@@ -327,6 +327,19 @@ class ConfigurationTestCase(unittest.TestCase):
         response = self._make_request("/protected-test")
         self.assertEqual(response.status, 200)
 
+    def test_ipfilter_enabled_allow_additional_ip_networks(self):
+        self._setup_environment(
+            (
+                ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                ("IPFILTER_ENABLED", "True"),
+                ("ADDITIONAL_IP_LIST", "1.1.1.0/29"),
+                ("PUBLIC_PATHS", "/public-test"),
+            )
+        )
+
+        response = self._make_request("/protected-test")
+        self.assertEqual(response.status, 200)
+
     def test_pub_host_preferred_when_pub_and_priv(self):
         self._setup_environment(
             (

@@ -190,6 +190,10 @@ def handle_request(u_path):
                 for ip_range in ip_filter_rules["ips"]
             )
             or client_ip in additional_ip_list
+            or any(
+                ip_address(client_ip) in ip_network(ip_range)
+                for ip_range in additional_ip_list
+            )
         )
 
         shared_tokens = ip_filter_rules["shared_tokens"]
