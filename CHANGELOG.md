@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/uktrade/ip-filter/compare/2.0.0...2.0.1) (2024-10-28)
+
+
+### Bug Fixes
+
+* DPM-325 - allow networks in ADDITIONAL_IP_LIST ([#45](https://github.com/uktrade/ip-filter/issues/45)) ([073832d](https://github.com/uktrade/ip-filter/commit/073832d7d2c28ef93fa700622f9d40d4f1b22a74))
+
 ## [2.0.0](https://github.com/uktrade/ip-filter/compare/1.1.0...2.0.0) (2024-08-09)
 
 
