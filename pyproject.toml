@@ -17,6 +17,7 @@ toml = "^0.10.2"
 flask-caching = "^2.1.0"
 dbt-copilot-python = "^0.2.0"
 sentry-sdk = {extras = ["flask"], version = "^1.45.0"}
+ddtrace = "^2.16.0"
 
 [tool.poetry.group.dev.dependencies]
 coverage = "^5.0.4"
