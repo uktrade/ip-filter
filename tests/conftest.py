@@ -29,6 +29,10 @@ def create_filter(port, env=()):
         if name.strip() == "web":
             break
 
+    # ugly hack to get around the ddtrace-run breaking unit tests and causing the codebuild job to take
+    # ages. There's probably an option to disable this with an env var
+    command = command.replace("ddtrace-run ", "")
+
     default_env = {
         "PORT": str(port),
         "EMAIL_NAME": "The Department for International Trade WebOps team",
