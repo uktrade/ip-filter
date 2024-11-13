@@ -20,13 +20,14 @@ sentry-sdk = {extras = ["flask"], version = "^2.8.0"}
 gevent = "^24.2.1"
 
 [tool.poetry.group.dev.dependencies]
-coverage = "^5.0.4"
+coverage = "^7.5.0"
 multiprocess = "^0.70.14"
 parameterized = "^0.9.0"
 pre-commit = "^3.5.0"
 smart-open = "^6.3.0"
 ipython = "^8.20.0"
 pytest = "^7.4.4"
+pytest-cov = "^6.0.0"
 
 [build-system]
 requires = ["poetry-core"]
