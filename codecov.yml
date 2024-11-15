@@ -3,4 +3,5 @@ codecov:
     after_n_builds: 2
 
 ignore:
+  - "tests"
   - "**/tests/**"
