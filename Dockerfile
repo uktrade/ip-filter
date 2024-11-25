@@ -10,10 +10,17 @@ RUN apt-get update && apt-get install -qq build-essential \
 
 WORKDIR /app
 
-COPY pyproject.toml /app
-RUN pip install poetry && poetry add honcho && poetry install
+#COPY pyproject.toml /app
+#RUN pip install poetry && poetry add honcho && poetry install
 
 
 COPY . /app
 
-CMD ["poetry", "run", "honcho", "start"]
+ENV PORT 8000
+
+COPY requirements.txt /app
+RUN pip install -r requirements.txt
+RUN chmod +x run.sh
+
+
+CMD "./run.sh"
