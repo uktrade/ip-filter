@@ -2342,6 +2342,12 @@ class LoggingTestCase(unittest.TestCase):
                     "EventResultDetails": response.status_code,
                     "FileName": "N/A",
                     "HttpStatusCode": response.status_code,
+                    "dd.trace_id": "0",
+                    "dd.span_id": "0",
+                    "env": "",
+                    "service": "",
+                    "version": "",
+                    "container_id": "",
                 }
             )
 
