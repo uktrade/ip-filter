@@ -276,6 +276,7 @@ def handle_request(u_path):
 
     # Proxy the request to the upstream service
 
+    logger.info("[%s] Downstream headers: %s", request_id, request.headers)
     logger.info("[%s] Making request to origin", request_id)
 
     def downstream_data():
@@ -298,6 +299,7 @@ def handle_request(u_path):
         body=downstream_data(),
     )
     logger.info("[%s] Origin response status: %s", request_id, origin_response.status)
+    logger.info("[%s] Origin headers: %s", request_id, origin_response.headers)
 
     def release_conn():
         origin_response.close()
