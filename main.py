@@ -274,16 +274,19 @@ def handle_request(u_path):
             logger.warning("[%s] Request blocked for %s", request_id, client_ip)
             return render_access_denied(client_ip, forwarded_url, request_id)
 
-    # Proxy the request to the upstream service
-
     logger.info("[%s] Making request to origin", request_id)
 
-    def downstream_data():
-        while True:
-            contents = request.stream.read(65536)
-            if not contents:
-                break
-            yield contents
+    # We proxy request data via an iterable, but only if we need to. This avoids turning GET
+    # requests without bodies into "transfer-encoding: chunked" requests, which can cause certain
+    # origin servers to truncate the response and result in net::ERR_CONTENT_LENGTH_MISMATCH
+    # errors in clients.
+    has_request_body = (
+        "content-length" in request.headers
+        or request.headers.get("transfer-encoding", "").lower() == "chunked"
+    )
+    request_body = (
+        iter(lambda: request.stream.read(65536), b"") if has_request_body else None
+    )
 
     origin_response = http.request(
         request.method,
@@ -295,7 +298,7 @@ def handle_request(u_path):
         redirect=False,
         assert_same_host=False,
         retries=False,
-        body=downstream_data(),
+        body=request_body,
     )
     logger.info("[%s] Origin response status: %s", request_id, origin_response.status)
 

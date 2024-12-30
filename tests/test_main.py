@@ -846,6 +846,67 @@ class ProxyTestCase(unittest.TestCase):
         )
         self.assertNotIn("x-echo-header-transfer-encoding", headers)
 
+    def test_if_no_body_then_no_content_length_and_no_transfer_encoding(self):
+        self.addCleanup(create_appconfig_agent(2772))
+        self.addCleanup(
+            create_filter(
+                8080,
+                (
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                    ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
+                ),
+            )
+        )
+        self.addCleanup(create_origin(8081))
+        wait_until_connectable(8080)
+        wait_until_connectable(8081)
+        wait_until_connectable(2772)
+
+        response = urllib3.PoolManager().request(
+            "GET",
+            url="http://127.0.0.1:8080/",
+            headers={
+                "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+            },
+        )
+        self.assertNotIn("x-echo-header-content-length", response.headers)
+        self.assertNotIn("x-echo-header-transfer-encoding", response.headers)
+
+    def test_body_length_zero_then_content_length_zero_and_no_transfer_encoding(self):
+        self.addCleanup(create_appconfig_agent(2772))
+        self.addCleanup(
+            create_filter(
+                8080,
+                (
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                    ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
+                ),
+            )
+        )
+        self.addCleanup(create_origin(8081))
+        wait_until_connectable(8080)
+        wait_until_connectable(8081)
+        wait_until_connectable(2772)
+
+        headers = (
+            urllib3.PoolManager()
+            .request(
+                "GET",
+                url="http://127.0.0.1:8080/",
+                headers={
+                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+                },
+                body=b"",
+            )
+            .headers
+        )
+        self.assertEqual(headers["x-echo-header-content-length"], "0")
+        self.assertNotIn("x-echo-header-transfer-encoding", headers)
+
     def test_response_header_is_forwarded(self):
         self.addCleanup(create_appconfig_agent(2772))
         self.addCleanup(
@@ -1226,7 +1287,7 @@ class ProxyTestCase(unittest.TestCase):
         self.assertEqual(response.headers["content-encoding"], "gzip")
         self.assertIn("content-length", response.headers)
 
-    def test_slow_upload(self):
+    def test_slow_upload_non_chunked(self):
         self.addCleanup(create_appconfig_agent(2772))
         self.addCleanup(
             create_filter(
@@ -1251,21 +1312,53 @@ class ProxyTestCase(unittest.TestCase):
                 yield b"-"
                 time.sleep(1)
 
-        # Testing non-chunked streaming requests
-        data = (
-            urllib3.PoolManager()
-            .request(
-                "POST",
-                "http://127.0.0.1:8080/",
-                headers={
-                    "content-length": str(num_bytes),
-                    "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
-                },
-                body=body(),
-            )
-            .data
+        response = urllib3.PoolManager().request(
+            "POST",
+            "http://127.0.0.1:8080/",
+            headers={
+                "content-length": str(num_bytes),
+                "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+            },
+            body=body(),
         )
-        self.assertEqual(data, b"-" * num_bytes)
+        self.assertEqual(response.data, b"-" * num_bytes)
+        self.assertNotIn("x-echo-header-transfer-encoding", response.headers)
+
+    def test_slow_upload_chunked(self):
+        self.addCleanup(create_appconfig_agent(2772))
+        self.addCleanup(
+            create_filter(
+                8080,
+                (
+                    ("SERVER", "localhost:8081"),
+                    ("SERVER_PROTO", "http"),
+                    ("COPILOT_ENVIRONMENT_NAME", "staging"),
+                    ("APPCONFIG_PROFILES", "testapp:testenv:testconfig"),
+                ),
+            )
+        )
+        self.addCleanup(create_origin(8081))
+        wait_until_connectable(8080)
+        wait_until_connectable(8081)
+        wait_until_connectable(2772)
+
+        num_bytes = 35
+
+        def body():
+            for _ in range(0, num_bytes):
+                yield b"-"
+                time.sleep(1)
+
+        response = urllib3.PoolManager().request(
+            "POST",
+            "http://127.0.0.1:8080/",
+            headers={
+                "x-forwarded-for": "1.2.3.4, 1.1.1.1, 1.1.1.1",
+            },
+            body=body(),
+        )
+        self.assertEqual(response.data, b"-" * num_bytes)
+        self.assertEqual(response.headers["x-echo-header-transfer-encoding"], "chunked")
 
     def test_chunked_response(self):
         self.addCleanup(create_appconfig_agent(2772))
