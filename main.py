@@ -4,17 +4,11 @@ import string
 import sys
 from ipaddress import ip_address
 from ipaddress import ip_network
-from pathlib import Path
 from random import choices
 
 import sentry_sdk
-import urllib3
-from flask import Flask
-from flask import Response
-from flask import render_template
-from flask import request
-from flask.logging import default_handler
-from sentry_sdk.integrations.flask import FlaskIntegration
+from aiohttp import web
+from sentry_sdk.integrations.aiohttp import AioHttpIntegration
 
 import settings
 from asim_formatter import ASIMFormatter
@@ -26,7 +20,6 @@ sentry_dsn = os.getenv("SENTRY_DSN")
 sentry_enable_tracing = os.getenv("SENTRY_ENABLE_TRACING", "False") == "True"
 sentry_tracing_sample_rate = float(os.getenv("SENTRY_TRACING_SAMPLE_RATE", "1.0"))
 
-
 if sentry_dsn:
     application = os.getenv("COPILOT_APPLICATION_NAME", "no-application")
     environment = os.getenv("COPILOT_ENVIRONMENT_NAME", "no-environment")
@@ -37,32 +30,39 @@ if sentry_dsn:
         enable_tracing=sentry_enable_tracing,
         traces_sample_rate=sentry_tracing_sample_rate,
         environment=env_name,
-        integrations=[FlaskIntegration()],
+        integrations=[AioHttpIntegration()],
     )
 
-
-HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]
-
-
-app = Flask(__name__, template_folder=Path(__file__).parent, static_folder=None)
-
-PoolClass = (
-    urllib3.HTTPConnectionPool
-    if settings.SERVER_PROTO == "http"
-    else urllib3.HTTPSConnectionPool
-)
-http = PoolClass(settings.SERVER, maxsize=10)
+request_id_alphabet = string.ascii_letters + string.digits
 
 logging.basicConfig(stream=sys.stdout, level=settings.LOG_LEVEL)
 default_handler.setFormatter(ASIMFormatter())
 logger = logging.getLogger(__name__)
 logger.addHandler(default_handler)
-request_id_alphabet = string.ascii_letters + string.digits
 
-urllib3_log_level = logging.getLevelName(os.getenv("URLLIB3_LOG_LEVEL", "WARN"))
-urllib3_logger = logging.getLogger("urllib3")
-urllib3_logger.setLevel(urllib3_log_level)
-urllib3_logger.removeHandler(default_handler)
+aiohttp_log_level = logging.getLevelName(os.getenv("AIOHTTP_LOG_LEVEL", "WARN"))
+aiohttp_logger_names = ["access", "client", "internal", "server", "web", "websocket"]
+for aiohttp_logger_name in aiohttp_logger_names:
+    aiohttp_logger = logging.getLogger(f"aiohttp.{aiohttp_logger_name}")
+    aiohttp_logger.setLevel(aiohttp_log_level)
+    aiohttp_logger.removeHandler(default_handler)
+
+
+async def client_session(app):
+    """
+    Creates and properly closes an aiohttp ClientSession, which is essentially a
+    connection pool.
+
+    https://docs.aiohttp.org/en/stable/web_advanced.html#cleanup-context
+    """
+
+    app[client_session] = aiohttp.ClientSession(
+        auto_decompress=False,
+        cookie_jar=aiohttp.DummyCookieJar(),
+        skip_auto_headers=["Accept-Encoding"],
+    )
+    yield
+    await app[client_session].close()
 
 
 def render_access_denied(client_ip, forwarded_url, request_id, reason=""):
@@ -80,16 +80,7 @@ def render_access_denied(client_ip, forwarded_url, request_id, reason=""):
     )
 
 
-@app.route(
-    "/",
-    defaults={"u_path": ""},
-    methods=HTTP_METHODS,
-)
-@app.route(
-    "/<path:u_path>",
-    methods=HTTP_METHODS,
-)
-def handle_request(u_path):
+def handle_request(request):
     request_id = request.headers.get("X-B3-TraceId") or "".join(
         choices(request_id_alphabet, k=8)
     )
@@ -322,8 +313,24 @@ def handle_request(u_path):
     return downstream_response
 
 
-@app.after_request
-def log_response(response):
-    app.logger.info("Response details", extra={"response": response})
+# @app.after_request
+# def log_response(response):
+#     app.logger.info("Response details", extra={"response": response})
 
-    return response
+#     return response
+
+
+if __name__ == "__main__":
+    app = web.Application()
+
+    # Create an aiohttp client session on startup, and make sure to close on shut down
+    app.cleanup_ctx.append(client_session)
+
+    # Register a route for all HTTP methods we want to support
+    http_methods = ["get", "post", "put", "patch", "delete", "options", "head"]
+    app.add_routes(
+        [getattr(web, method)(r"/{path:.*}", handle) for method in http_methods]
+    )
+
+    # Run the app
+    web.run_app(app, port=os.environ["PORT"])
