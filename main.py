@@ -4,19 +4,13 @@ import string
 import sys
 from ipaddress import ip_address
 from ipaddress import ip_network
-from pathlib import Path
 from random import choices
 
 import sentry_sdk
-import urllib3
-from flask import Flask
-from flask import Response
-from flask import render_template
-from flask import request
-from flask.logging import default_handler
-from flask_caching import Cache
-from sentry_sdk.integrations.flask import FlaskIntegration
+from aiohttp import web
+from sentry_sdk.integrations.aiohttp import AioHttpIntegration
 
+import settings
 from asim_formatter import ASIMFormatter
 from config import ValidationError
 from config import get_ipfilter_config
@@ -25,7 +19,6 @@ from utils import constant_time_is_equal
 sentry_dsn = os.getenv("SENTRY_DSN")
 sentry_enable_tracing = os.getenv("SENTRY_ENABLE_TRACING", "False") == "True"
 sentry_tracing_sample_rate = float(os.getenv("SENTRY_TRACING_SAMPLE_RATE", "1.0"))
-
 
 if sentry_dsn:
     application = os.getenv("COPILOT_APPLICATION_NAME", "no-application")
@@ -37,34 +30,39 @@ if sentry_dsn:
         enable_tracing=sentry_enable_tracing,
         traces_sample_rate=sentry_tracing_sample_rate,
         environment=env_name,
-        integrations=[FlaskIntegration()],
+        integrations=[AioHttpIntegration()],
     )
 
+request_id_alphabet = string.ascii_letters + string.digits
 
-HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]
-
-
-app = Flask(__name__, template_folder=Path(__file__).parent, static_folder=None)
-app.config.from_object("settings")
-cache = Cache(app)
-
-PoolClass = (
-    urllib3.HTTPConnectionPool
-    if app.config["SERVER_PROTO"] == "http"
-    else urllib3.HTTPSConnectionPool
-)
-http = PoolClass(app.config["SERVER"], maxsize=10)
-
-logging.basicConfig(stream=sys.stdout, level=app.config["LOG_LEVEL"])
+logging.basicConfig(stream=sys.stdout, level=settings.LOG_LEVEL)
 default_handler.setFormatter(ASIMFormatter())
 logger = logging.getLogger(__name__)
 logger.addHandler(default_handler)
-request_id_alphabet = string.ascii_letters + string.digits
 
-urllib3_log_level = logging.getLevelName(os.getenv("URLLIB3_LOG_LEVEL", "WARN"))
-urllib3_logger = logging.getLogger("urllib3")
-urllib3_logger.setLevel(urllib3_log_level)
-urllib3_logger.removeHandler(default_handler)
+aiohttp_log_level = logging.getLevelName(os.getenv("AIOHTTP_LOG_LEVEL", "WARN"))
+aiohttp_logger_names = ["access", "client", "internal", "server", "web", "websocket"]
+for aiohttp_logger_name in aiohttp_logger_names:
+    aiohttp_logger = logging.getLogger(f"aiohttp.{aiohttp_logger_name}")
+    aiohttp_logger.setLevel(aiohttp_log_level)
+    aiohttp_logger.removeHandler(default_handler)
+
+
+async def client_session(app):
+    """
+    Creates and properly closes an aiohttp ClientSession, which is essentially a
+    connection pool.
+
+    https://docs.aiohttp.org/en/stable/web_advanced.html#cleanup-context
+    """
+
+    app[client_session] = aiohttp.ClientSession(
+        auto_decompress=False,
+        cookie_jar=aiohttp.DummyCookieJar(),
+        skip_auto_headers=["Accept-Encoding"],
+    )
+    yield
+    await app[client_session].close()
 
 
 def render_access_denied(client_ip, forwarded_url, request_id, reason=""):
@@ -72,8 +70,8 @@ def render_access_denied(client_ip, forwarded_url, request_id, reason=""):
         render_template(
             "access-denied.html",
             client_ip=client_ip,
-            email_name=app.config["EMAIL_NAME"],
-            email=app.config["EMAIL"],
+            email_name=settings.EMAIL_NAME,
+            email=settings.EMAIL,
             request_id=request_id,
             forwarded_url=forwarded_url,
         )
@@ -82,16 +80,7 @@ def render_access_denied(client_ip, forwarded_url, request_id, reason=""):
     )
 
 
-@app.route(
-    "/",
-    defaults={"u_path": ""},
-    methods=HTTP_METHODS,
-)
-@app.route(
-    "/<path:u_path>",
-    methods=HTTP_METHODS,
-)
-def handle_request(u_path):
+def handle_request(request):
     request_id = request.headers.get("X-B3-TraceId") or "".join(
         choices(request_id_alphabet, k=8)
     )
@@ -113,7 +102,7 @@ def handle_request(u_path):
 
     try:
         client_ip = x_forwarded_for.split(",")[
-            app.config["IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX"]
+            settings.IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX
         ].strip()
     except IndexError:
         logger.error(
@@ -123,8 +112,8 @@ def handle_request(u_path):
         )
         return render_access_denied("Unknown", forwarded_url, request_id)
 
-    protected_paths = app.config["PROTECTED_PATHS"]
-    public_paths = app.config["PUBLIC_PATHS"]
+    protected_paths = settings.PROTECTED_PATHS
+    public_paths = settings.PUBLIC_PATHS
 
     if public_paths and protected_paths:
         # public and protected path settings are mutually exclusive. If both are enabled, we ignore the PROTECTED_PATHS
@@ -135,8 +124,8 @@ def handle_request(u_path):
         )
         protected_paths = []
 
-    priv_host_list = app.config["PRIV_HOST_LIST"]
-    pub_host_list = app.config["PUB_HOST_LIST"]
+    priv_host_list = settings.PRIV_HOST_LIST
+    pub_host_list = settings.PUB_HOST_LIST
 
     if priv_host_list and pub_host_list:
         logger.warning(
@@ -144,7 +133,7 @@ def handle_request(u_path):
         )
         priv_host_list = []
 
-    ip_filter_enabled_and_required_for_path = app.config["IPFILTER_ENABLED"]
+    ip_filter_enabled_and_required_for_path = settings.IPFILTER_ENABLED
 
     # Paths are public by default unless listed in the PROTECTED_PATHS env var
     if bool(protected_paths) and not any(
@@ -175,7 +164,7 @@ def handle_request(u_path):
 
     if ip_filter_enabled_and_required_for_path:
         try:
-            ip_filter_rules = get_ipfilter_config(app.config["APPCONFIG_PROFILES"])
+            ip_filter_rules = get_ipfilter_config(settings.APPCONFIG_PROFILES)
         except ValidationError as ex:
             logger.error(f"[%s] {ex}", request_id)
             return render_access_denied(client_ip, forwarded_url, request_id)
@@ -183,7 +172,7 @@ def handle_request(u_path):
             logger.error(f"[%s] {ex}", request_id)
             return render_access_denied(client_ip, forwarded_url, request_id, str(ex))
 
-        additional_ip_list = app.config["ADDITIONAL_IP_LIST"]
+        additional_ip_list = settings.ADDITIONAL_IP_LIST
         ip_in_whitelist = (
             any(
                 ip_address(client_ip) in ip_network(ip_range)
@@ -324,8 +313,24 @@ def handle_request(u_path):
     return downstream_response
 
 
-@app.after_request
-def log_response(response):
-    app.logger.info("Response details", extra={"response": response})
+# @app.after_request
+# def log_response(response):
+#     app.logger.info("Response details", extra={"response": response})
 
-    return response
+#     return response
+
+
+if __name__ == "__main__":
+    app = web.Application()
+
+    # Create an aiohttp client session on startup, and make sure to close on shut down
+    app.cleanup_ctx.append(client_session)
+
+    # Register a route for all HTTP methods we want to support
+    http_methods = ["get", "post", "put", "patch", "delete", "options", "head"]
+    app.add_routes(
+        [getattr(web, method)(r"/{path:.*}", handle) for method in http_methods]
+    )
+
+    # Run the app
+    web.run_app(app, port=os.environ["PORT"])

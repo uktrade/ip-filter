@@ -11,9 +11,6 @@ LOG_LEVEL = env.get("LOG_LEVEL", "INFO")
 logging.basicConfig(stream=sys.stdout, level=LOG_LEVEL)
 logger = logging.getLogger(__name__)
 
-# Flask-Caching related configs
-CACHE_TYPE = "SimpleCache"
-CACHE_DEFAULT_TIMEOUT = 300
 DEBUG = env.bool("DEBUG", default=False)
 ENVIRONMENT_NAME = env["COPILOT_ENVIRONMENT_NAME"]
 
