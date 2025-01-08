@@ -72,12 +72,12 @@ def get_appconfig_configuration(appconfig_path):
     Note, environment refers to the AppConfig environment, not the local
     application environment.
     """
-    from main import app
+    import settings
 
     application, environment, configuration = appconfig_path.split(":")
 
     url = urljoin(
-        app.config["APPCONFIG_URL"],
+        settings.APPCONFIG_URL,
         f"/applications/{application}/environments/{environment}/configurations/{configuration}",
     )
 

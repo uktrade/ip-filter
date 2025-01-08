@@ -17,6 +17,7 @@ from flask.logging import default_handler
 from flask_caching import Cache
 from sentry_sdk.integrations.flask import FlaskIntegration
 
+import settings
 from asim_formatter import ASIMFormatter
 from config import ValidationError
 from config import get_ipfilter_config
@@ -45,17 +46,16 @@ HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]
 
 
 app = Flask(__name__, template_folder=Path(__file__).parent, static_folder=None)
-app.config.from_object("settings")
 cache = Cache(app)
 
 PoolClass = (
     urllib3.HTTPConnectionPool
-    if app.config["SERVER_PROTO"] == "http"
+    if settings.SERVER_PROTO == "http"
     else urllib3.HTTPSConnectionPool
 )
-http = PoolClass(app.config["SERVER"], maxsize=10)
+http = PoolClass(settings.SERVER, maxsize=10)
 
-logging.basicConfig(stream=sys.stdout, level=app.config["LOG_LEVEL"])
+logging.basicConfig(stream=sys.stdout, level=settings.LOG_LEVEL)
 default_handler.setFormatter(ASIMFormatter())
 logger = logging.getLogger(__name__)
 logger.addHandler(default_handler)
@@ -72,8 +72,8 @@ def render_access_denied(client_ip, forwarded_url, request_id, reason=""):
         render_template(
             "access-denied.html",
             client_ip=client_ip,
-            email_name=app.config["EMAIL_NAME"],
-            email=app.config["EMAIL"],
+            email_name=settings.EMAIL_NAME,
+            email=settings.EMAIL,
             request_id=request_id,
             forwarded_url=forwarded_url,
         )
@@ -113,7 +113,7 @@ def handle_request(u_path):
 
     try:
         client_ip = x_forwarded_for.split(",")[
-            app.config["IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX"]
+            settings.IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX
         ].strip()
     except IndexError:
         logger.error(
@@ -123,8 +123,8 @@ def handle_request(u_path):
         )
         return render_access_denied("Unknown", forwarded_url, request_id)
 
-    protected_paths = app.config["PROTECTED_PATHS"]
-    public_paths = app.config["PUBLIC_PATHS"]
+    protected_paths = settings.PROTECTED_PATHS
+    public_paths = settings.PUBLIC_PATHS
 
     if public_paths and protected_paths:
         # public and protected path settings are mutually exclusive. If both are enabled, we ignore the PROTECTED_PATHS
@@ -135,8 +135,8 @@ def handle_request(u_path):
         )
         protected_paths = []
 
-    priv_host_list = app.config["PRIV_HOST_LIST"]
-    pub_host_list = app.config["PUB_HOST_LIST"]
+    priv_host_list = settings.PRIV_HOST_LIST
+    pub_host_list = settings.PUB_HOST_LIST
 
     if priv_host_list and pub_host_list:
         logger.warning(
@@ -144,7 +144,7 @@ def handle_request(u_path):
         )
         priv_host_list = []
 
-    ip_filter_enabled_and_required_for_path = app.config["IPFILTER_ENABLED"]
+    ip_filter_enabled_and_required_for_path = settings.IPFILTER_ENABLED
 
     # Paths are public by default unless listed in the PROTECTED_PATHS env var
     if bool(protected_paths) and not any(
@@ -175,7 +175,7 @@ def handle_request(u_path):
 
     if ip_filter_enabled_and_required_for_path:
         try:
-            ip_filter_rules = get_ipfilter_config(app.config["APPCONFIG_PROFILES"])
+            ip_filter_rules = get_ipfilter_config(settings.APPCONFIG_PROFILES)
         except ValidationError as ex:
             logger.error(f"[%s] {ex}", request_id)
             return render_access_denied(client_ip, forwarded_url, request_id)
@@ -183,7 +183,7 @@ def handle_request(u_path):
             logger.error(f"[%s] {ex}", request_id)
             return render_access_denied(client_ip, forwarded_url, request_id, str(ex))
 
-        additional_ip_list = app.config["ADDITIONAL_IP_LIST"]
+        additional_ip_list = settings.ADDITIONAL_IP_LIST
         ip_in_whitelist = (
             any(
                 ip_address(client_ip) in ip_network(ip_range)
