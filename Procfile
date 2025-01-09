@@ -1,1 +1,1 @@
-web: gunicorn main:app --worker-class gevent -b 0.0.0.0:$PORT
+web: poetry run python main.py -b 0.0.0.0:$PORT

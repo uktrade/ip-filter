@@ -108,7 +108,6 @@ def create_origin(port):
         gzip_file.write(request.stream.read())
         gzip_file.close()
         zipped = gzip_buffer.getvalue()
-
         return Response(
             zipped,
             headers=[
@@ -207,7 +206,6 @@ BasicAuth: []
 
     def config_view(application, environment, configuration):
         key = f"{application}:{environment}:{configuration}"
-
         if override_config:
             config = config_map
         else:

@@ -298,7 +298,7 @@ class ConfigurationTestCase(unittest.TestCase):
         response = self._make_request("/another-random-path")
         self.assertEqual(response.status, 403)
 
-    def test_appconfig_agent_with_valid_ip(self):
+    def test_appconfig_agent_with_valid_i(self):
         self.addCleanup(create_appconfig_agent(2772))
 
         wait_until_connectable(2772)
@@ -2439,13 +2439,13 @@ class LoggingTestCase(unittest.TestCase):
             )
 
     @patch("main.cache")
-    def test_get_package_version_no_cache(self, cache):
+    async def test_get_package_version_no_cache(self, cache):
         cache.get.return_value = None
 
-        assert get_package_version() == self.ip_filter_version
+        assert await get_package_version() == self.ip_filter_version
 
     @patch("main.cache")
-    def test_get_package_version_cache(self, cache):
+    async def test_get_package_version_cache(self, cache):
         cache.get.return_value = "6.6.6"
 
-        assert get_package_version() == "6.6.6"
+        assert await get_package_version() == "6.6.6"

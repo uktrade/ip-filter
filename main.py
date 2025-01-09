@@ -1,3 +1,4 @@
+import argparse
 import logging
 import os
 import string
@@ -9,13 +10,12 @@ from random import choices
 
 import sentry_sdk
 import urllib3
-from flask import Flask
-from flask import Response
-from flask import render_template
-from flask import request
-from flask.logging import default_handler
-from flask_caching import Cache
-from sentry_sdk.integrations.flask import FlaskIntegration
+from urllib3.util import Url
+from aiocache import Cache
+from aiohttp import web, ClientSession
+import aiohttp_jinja2
+import jinja2
+import settings
 
 from asim_formatter import ASIMFormatter
 from config import ValidationError
@@ -32,6 +32,7 @@ if sentry_dsn:
     environment = os.getenv("COPILOT_ENVIRONMENT_NAME", "no-environment")
     env_name = f"{application}-{environment}"
 
+    """
     sentry_sdk.init(
         dsn=sentry_dsn,
         enable_tracing=sentry_enable_tracing,
@@ -39,49 +40,65 @@ if sentry_dsn:
         environment=env_name,
         integrations=[FlaskIntegration()],
     )
+    """
 
 
 HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]
 
 
-app = Flask(__name__, template_folder=Path(__file__).parent, static_folder=None)
-app.config.from_object("settings")
-cache = Cache(app)
+# app = Flask(__name__, template_folder=Path(__file__).parent, static_folder=None)
+app = web.Application()
+cache = Cache(Cache.MEMORY)
+# app.config.from_object("settings")
+
+aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader(Path(__file__).parent))
+
+config_dict = {key: getattr(settings, key) for key in dir(settings)}
+app["config"] = config_dict
 
 PoolClass = (
     urllib3.HTTPConnectionPool
-    if app.config["SERVER_PROTO"] == "http"
+    if app["config"]["SERVER_PROTO"] == "http"
     else urllib3.HTTPSConnectionPool
 )
-http = PoolClass(app.config["SERVER"], maxsize=10)
+#http = PoolClass(app["config"]["SERVER"], maxsize=10)
 
-logging.basicConfig(stream=sys.stdout, level=app.config["LOG_LEVEL"])
-default_handler.setFormatter(ASIMFormatter())
+logging.basicConfig(stream=sys.stdout, level=app["config"]["LOG_LEVEL"])
+default_handler = logging.StreamHandler()
+# default_handler.setFormatter(ASIMFormatter())
 logger = logging.getLogger(__name__)
 logger.addHandler(default_handler)
 request_id_alphabet = string.ascii_letters + string.digits
 
-urllib3_log_level = logging.getLevelName(os.getenv("URLLIB3_LOG_LEVEL", "WARN"))
+urllib3_log_level = logging.getLevelName(os.getenv("URLLIB3_LOG_LEVEL", "DEBUG"))
 urllib3_logger = logging.getLogger("urllib3")
 urllib3_logger.setLevel(urllib3_log_level)
 urllib3_logger.removeHandler(default_handler)
 
 
-def render_access_denied(client_ip, forwarded_url, request_id, reason=""):
-    return (
-        render_template(
-            "access-denied.html",
-            client_ip=client_ip,
-            email_name=app.config["EMAIL_NAME"],
-            email=app.config["EMAIL"],
-            request_id=request_id,
-            forwarded_url=forwarded_url,
-        )
-        + reason,
-        403,
+async def render_access_denied(request, client_ip, forwarded_url, request_id, reason=""):
+    template_response = aiohttp_jinja2.render_template(
+        "access-denied.html",
+        request,
+        context={
+            "client_ip": client_ip,
+            "email_name": app["config"]["EMAIL_NAME"],
+            "email": app["config"]["EMAIL"],
+            "request_id": request_id,
+            "forwarded_url": forwarded_url,
+        }
+    )
+
+    combined_text = template_response.text + reason
+
+    return web.Response(
+        text=combined_text,
+        content_type='text/html',
+        status=403,
     )
 
 
+"""
 @app.route(
     "/",
     defaults={"u_path": ""},
@@ -91,7 +108,11 @@ def render_access_denied(client_ip, forwarded_url, request_id, reason=""):
     "/<path:u_path>",
     methods=HTTP_METHODS,
 )
-def handle_request(u_path):
+"""
+
+
+async def handle_request(request):
+    u_path = request.match_info.get("u_path", "")
     request_id = request.headers.get("X-B3-TraceId") or "".join(
         choices(request_id_alphabet, k=8)
     )
@@ -109,11 +130,11 @@ def handle_request(u_path):
             return "OK"
 
         logger.error("[%s] X-Forwarded-For header is missing", request_id)
-        return render_access_denied("Unknown", forwarded_url, request_id)
+        return await render_access_denied(request, "Unknown", forwarded_url, request_id)
 
     try:
         client_ip = x_forwarded_for.split(",")[
-            app.config["IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX"]
+            app["config"]["IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX"]
         ].strip()
     except IndexError:
         logger.error(
@@ -121,10 +142,10 @@ def handle_request(u_path):
             request_id,
             x_forwarded_for,
         )
-        return render_access_denied("Unknown", forwarded_url, request_id)
+        return await render_access_denied(request, "Unknown", forwarded_url, request_id)
 
-    protected_paths = app.config["PROTECTED_PATHS"]
-    public_paths = app.config["PUBLIC_PATHS"]
+    protected_paths = app["config"]["PROTECTED_PATHS"]
+    public_paths = app["config"]["PUBLIC_PATHS"]
 
     if public_paths and protected_paths:
         # public and protected path settings are mutually exclusive. If both are enabled, we ignore the PROTECTED_PATHS
@@ -135,8 +156,8 @@ def handle_request(u_path):
         )
         protected_paths = []
 
-    priv_host_list = app.config["PRIV_HOST_LIST"]
-    pub_host_list = app.config["PUB_HOST_LIST"]
+    priv_host_list = app["config"]["PRIV_HOST_LIST"]
+    pub_host_list = app["config"]["PUB_HOST_LIST"]
 
     if priv_host_list and pub_host_list:
         logger.warning(
@@ -144,7 +165,7 @@ def handle_request(u_path):
         )
         priv_host_list = []
 
-    ip_filter_enabled_and_required_for_path = app.config["IPFILTER_ENABLED"]
+    ip_filter_enabled_and_required_for_path = app["config"]["IPFILTER_ENABLED"]
 
     # Paths are public by default unless listed in the PROTECTED_PATHS env var
     if bool(protected_paths) and not any(
@@ -175,15 +196,15 @@ def handle_request(u_path):
 
     if ip_filter_enabled_and_required_for_path:
         try:
-            ip_filter_rules = get_ipfilter_config(app.config["APPCONFIG_PROFILES"])
+            ip_filter_rules = await get_ipfilter_config(app["config"]["APPCONFIG_PROFILES"])
         except ValidationError as ex:
             logger.error(f"[%s] {ex}", request_id)
-            return render_access_denied(client_ip, forwarded_url, request_id)
+            return await render_access_denied(request, client_ip, forwarded_url, request_id)
         except Exception as ex:
             logger.error(f"[%s] {ex}", request_id)
-            return render_access_denied(client_ip, forwarded_url, request_id, str(ex))
+            return await render_access_denied(request, client_ip, forwarded_url, request_id, str(ex))
 
-        additional_ip_list = app.config["ADDITIONAL_IP_LIST"]
+        additional_ip_list = app["config"]["ADDITIONAL_IP_LIST"]
         ip_in_whitelist = (
             any(
                 ip_address(client_ip) in ip_network(ip_range)
@@ -272,7 +293,7 @@ def handle_request(u_path):
 
         if not all_checks_passed:
             logger.warning("[%s] Request blocked for %s", request_id, client_ip)
-            return render_access_denied(client_ip, forwarded_url, request_id)
+            return await render_access_denied(request, client_ip, forwarded_url, request_id)
 
     logger.info("[%s] Making request to origin", request_id)
 
@@ -284,48 +305,71 @@ def handle_request(u_path):
         "content-length" in request.headers
         or request.headers.get("transfer-encoding", "").lower() == "chunked"
     )
-    request_body = (
-        iter(lambda: request.stream.read(65536), b"") if has_request_body else None
-    )
 
-    origin_response = http.request(
-        request.method,
-        request.full_path,  #  This should be request.full_path not request.url as the latter causes issues in some cases.
-        headers={
-            k: v for k, v in request.headers if k.lower() not in headers_to_remove
-        },
-        preload_content=False,
-        redirect=False,
-        assert_same_host=False,
-        retries=False,
-        body=request_body,
-    )
-    logger.info("[%s] Origin response status: %s", request_id, origin_response.status)
+    async with ClientSession() as session:
+        proto = app["config"]["SERVER_PROTO"]
+        host = app["config"]["SERVER"]
+        url_parts = Url(scheme=proto, host=host, path=request.path)
 
-    def release_conn():
-        origin_response.close()
-        origin_response.release_conn()
-        logger.info("[%s] End", request_id)
+        async with session.request(
+            method=request.method,
+            url=url_parts.url,
+            headers={
+                k: v for k, v in request.headers.items() if k.lower() not in headers_to_remove
+            },
+            data=await request.content.read(),
+        ) as origin_response:
+            logger.info("[%s] Origin response status: %s", request_id, origin_response.status)
 
-    downstream_response = Response(
-        origin_response.stream(65536, decode_content=False),
-        status=origin_response.status,
-        headers=[
-            (k, v)
-            for k, v in origin_response.headers.items()
-            if k.lower() != "connection"
-        ],
-    )
-    downstream_response.autocorrect_location_header = False
-    downstream_response.call_on_close(release_conn)
+            downstream_response = web.StreamResponse(
+                status=origin_response.status,
+                headers=[
+                    (k, v)
+                    for k, v in origin_response.headers.items()
+                    if k.lower() != "connection"
+                ],
+            )
+            await downstream_response.prepare(request)
 
-    logger.info("[%s] Starting response to client", request_id)
+            async for chunk in origin_response.content.iter_chunked(65536):
+                await downstream_response.write(chunk)
 
-    return downstream_response
+            await downstream_response.write_eof()
+
+        logger.info("[%s] Starting response to client", request_id)
+
+        return downstream_response
 
 
+for method in HTTP_METHODS:
+    app.router.add_route(method, "/", handle_request)
+    app.router.add_route(method, "/{u_path:.*}", handle_request)
+
+
+# TODO: add as middleware
+"""
 @app.after_request
 def log_response(response):
     app.logger.info("Response details", extra={"response": response})
 
     return response
+"""
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '-b',
+        '--bind',
+        default='0.0.0.0:8080',
+        help='Bind address in host:port format.'
+    )
+    args = parser.parse_args()
+
+    host, port = args.bind.split(':')
+    port = int(port)
+    web.run_app(app, host=host, port=port)
+
+
+if __name__ == '__main__':
+    main()
