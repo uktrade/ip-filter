@@ -3,6 +3,9 @@ import os
 import sys
 
 from config import Environ
+# from dotenv import load_dotenv
+
+# load_dotenv()
 
 env = Environ(os.environ)
 

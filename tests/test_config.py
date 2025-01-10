@@ -1,7 +1,9 @@
+import aiohttp
+import asyncio
 import unittest
+import urllib3
 from unittest.mock import patch
 
-import urllib3
 from parameterized import parameterized
 
 from config import Environ, get_ipfilter_config, ValidationError
@@ -151,13 +153,13 @@ class ConfigurationTestCase(unittest.TestCase):
                 "connection": "close",
             }
         headers.update(additional_headers)
-        response = urllib3.PoolManager().request(
+    
+        response = urllib3.request(
             "GET",
             url=f"http://127.0.0.1:8080{request_path}",
             headers=headers,
             body=b"some-data",
         )
-
         return response
 
     def test_ipfilter_disabled(self):
@@ -280,6 +282,7 @@ class ConfigurationTestCase(unittest.TestCase):
         wait_until_connectable(2772)
 
         response = self._make_request()
+        print(response.status)
 
         self.assertEqual(response.status, 200)
 
@@ -363,15 +366,15 @@ def good_config():
 
 @patch("config.get_appconfig_configuration")
 class AppConfigValidationTestCase(unittest.TestCase):
-    def test_get_ipfilter_config_success(self, appconfig):
+    async def test_get_ipfilter_config_success(self, appconfig):
         config = good_config()
         appconfig.return_value = config
 
-        actual = get_ipfilter_config(["a"])
+        actual = await get_ipfilter_config(["a"])
 
         self.assertEqual(actual, {"ips": config["IpRanges"], "auth": config["BasicAuth"], "shared_tokens": config["SharedTokens"]})
 
-    def test_get_ipfilter_config_multiple_paths_aggregate_results(self, appconfig):
+    async def test_get_ipfilter_config_multiple_paths_aggregate_results(self, appconfig):
         config_a = good_config()
         config_b = {"IpRanges": ["3.3.3.0/24"]}
         config_c = {"BasicAuth": [
@@ -389,26 +392,26 @@ class AppConfigValidationTestCase(unittest.TestCase):
         ]}
         appconfig.side_effect = lambda path: {"a": config_a, "b": config_b, "c": config_c, "d": config_d}[path]
 
-        actual = get_ipfilter_config(["a", "b", "c", "d"])
+        actual = await get_ipfilter_config(["a", "b", "c", "d"])
 
         self.assertEqual(actual["ips"], ["1.1.1.1/32", "2.2.2.2", "2001:db8:abcd:0012::0/64", "3.3.3.0/24"])
         self.assertEqual(actual["auth"], [config_a["BasicAuth"][0], config_c["BasicAuth"][0]])
         self.assertEqual(actual["shared_tokens"], [config_a["SharedTokens"][0], config_d["SharedTokens"][0]])
 
-    def test_get_ipfilter_config_ignores_additional_keys(self, appconfig):
+    async def test_get_ipfilter_config_ignores_additional_keys(self, appconfig):
         config = good_config()
         config["BOGUS"] = True
         config["SAMOSA"] = "Mmm"
         appconfig.return_value = config
 
-        actual = get_ipfilter_config(["a"])
+        actual = await get_ipfilter_config(["a"])
         self.assertEqual(actual, {"ips": config["IpRanges"], "auth": config["BasicAuth"], "shared_tokens": config["SharedTokens"]})
 
-    def test_get_ipfilter_config_all_keys_optional(self, appconfig):
+    async def test_get_ipfilter_config_all_keys_optional(self, appconfig):
         config = {}
         appconfig.return_value = config
 
-        actual = get_ipfilter_config(["a"])
+        actual = await get_ipfilter_config(["a"])
         self.assertEqual(actual, {"ips": [], "auth": [], "shared_tokens": []})
 
     @parameterized.expand(
@@ -418,13 +421,13 @@ class AppConfigValidationTestCase(unittest.TestCase):
             ("2001:db8:abcd:12:bad::/32", "has host bits set"),
         ]
     )
-    def test_get_ipfilter_config_bad_ip_range_raises_exception(self, appconfig, ip_range, exp_error):
+    async def test_get_ipfilter_config_bad_ip_range_raises_exception(self, appconfig, ip_range, exp_error):
         conf = good_config()
         conf["IpRanges"].append(ip_range)
         appconfig.return_value = conf
 
         try:
-            get_ipfilter_config(["a"])
+            await get_ipfilter_config(["a"])
             self.fail("Validation should have failed")
         except ValidationError as ex:
             self.assertTrue("Key 'IpRanges'" in str(ex))
@@ -441,7 +444,7 @@ class AppConfigValidationTestCase(unittest.TestCase):
             ("Password", None, "Missing key: 'Password'"),
         ]
     )
-    def test_get_ipfilter_config_bad_auth_data_raises_exception(self, appconfig, key, data, message):
+    async def test_get_ipfilter_config_bad_auth_data_raises_exception(self, appconfig, key, data, message):
         conf = good_config()
         if data is not None:
             conf["BasicAuth"][0][key] = data
@@ -450,7 +453,7 @@ class AppConfigValidationTestCase(unittest.TestCase):
         appconfig.return_value = conf
 
         try:
-            get_ipfilter_config(["a"])
+            await get_ipfilter_config(["a"])
             self.fail("Validation should have failed")
         except ValidationError as ex:
             self.assertTrue(message in str(ex))

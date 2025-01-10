@@ -4,6 +4,7 @@ from urllib.parse import urljoin
 
 import urllib3
 import yaml
+from aiohttp import ClientSession
 from schema import Optional
 from schema import Schema
 from schema import SchemaError
@@ -62,7 +63,7 @@ class Environ(UserDict):
         return value
 
 
-def get_appconfig_configuration(appconfig_path):
+async def get_appconfig_configuration(appconfig_path):
     """
     Retrieve appconfig data from a local appconfig agent. `appconfig_path`
     should be in the format:
@@ -77,10 +78,11 @@ def get_appconfig_configuration(appconfig_path):
     application, environment, configuration = appconfig_path.split(":")
 
     url = urljoin(
-        app.config["APPCONFIG_URL"],
+        app["config"]["APPCONFIG_URL"],
         f"/applications/{application}/environments/{environment}/configurations/{configuration}",
     )
 
+    """
     try:
         response = urllib3.PoolManager().request(
             "GET",
@@ -91,6 +93,14 @@ def get_appconfig_configuration(appconfig_path):
 
     if response.status == 200:
         return yaml.safe_load(response.data)
+    """
+    try:
+        async with ClientSession() as session:
+            async with session.get(url) as response:
+                if response.status == 200:
+                    return yaml.safe_load(await response.text())
+    except Exception as ex:
+        raise AppConfigError(ex)
 
     raise AppConfigError(f"AppConfig for {appconfig_path} not found.")
 
@@ -124,14 +134,14 @@ class AppConfigError(Exception):
     pass
 
 
-def get_ipfilter_config(appconfig_paths: list[str]):
+async def get_ipfilter_config(appconfig_paths: list[str]):
     """Retrieve a list of app config configurations and combine them into a
     single dict."""
     ips = []
     auth = []
     shared_tokens = []
     for config_path in appconfig_paths:
-        config = get_appconfig_configuration(config_path)
+        config = await get_appconfig_configuration(config_path)
         try:
             APPCONFIG_SCHEMA.validate(config)
         except SchemaError as ex:

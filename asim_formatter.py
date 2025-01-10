@@ -2,11 +2,7 @@ import json
 import logging
 import os
 from datetime import datetime
-
-from flask import Request
-from flask import Response
-from flask import has_request_context
-from flask import request
+from aiohttp.web import Request, Response
 
 from utils import get_package_version
 
@@ -35,7 +31,7 @@ class ASIMFormatter(logging.Formatter):
         }
         return map[log_level]
 
-    def get_log_dict(self, record: logging.LogRecord) -> dict:
+    async def get_log_dict(self, record: logging.LogRecord) -> dict:
         log_time = datetime.utcfromtimestamp(record.created).isoformat()
 
         return {
@@ -48,7 +44,7 @@ class ASIMFormatter(logging.Formatter):
             "EventOriginalSeverity": record.levelname,  # duplicate of above?
             "EventSchema": "WebSession",
             "EventSchemaVersion": "0.2.6",
-            "IpFilterVersion": get_package_version(),
+            "IpFilterVersion": await get_package_version(),
         }
 
         # TODO: look at expanding to include other fields from schema: https://learn.microsoft.com/en-us/azure/sentinel/normalization-schema-web
