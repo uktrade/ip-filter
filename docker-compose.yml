@@ -5,6 +5,7 @@ services:
       - "9999:443"
     environment:
       SERVER: ipfilter:8000
+      PUBLIC_HOST: localhost
   ipfilter:
     build: .
     ports:
@@ -16,9 +17,14 @@ services:
       EMAIL_NAME: 'The Department for International Trade WebOps team'
       EMAIL: test@test.test
       LOG_LEVEL: INFO
-      SERVER: app:8080
+      SERVER: app:8081
+      ADDITIONAL_IP_LIST: 127.0.0.1,0.0.0.0
       #SENTRY_DSN: https://.... 
-  app:
+  upstream_nginx:
     image: nginx:latest
     ports:
       - "8080:80"
+  upstream_django:
+    build: djtest
+    ports:
+      - "8081:8080"
