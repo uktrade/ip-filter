@@ -10,8 +10,9 @@ import unittest
 import urllib.parse
 import uuid
 from datetime import datetime
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
+import ddtrace
 import urllib3
 from flask import Flask
 from flask import Response
@@ -2297,6 +2298,9 @@ class LoggingTestCase(unittest.TestCase):
         os.environ["COPILOT_ENVIRONMENT_NAME"] = "test"
         os.environ["SERVER"] = "localhost:8081"
         os.environ["EMAIL"] = "testemail"
+        os.environ["DD_ENV"] = "test"
+        os.environ["DD_SERVICE"] = "ip-filter"
+        os.environ["DD_VERSION"] = "1.0.0"
 
     def test_asim_formatter_get_log_dict(self):
         formatter = ASIMFormatter()
@@ -2377,7 +2381,13 @@ class LoggingTestCase(unittest.TestCase):
             "HttpStatusCode": response.status_code,
         }
 
-    def test_asim_formatter_format(self):
+    @patch("ddtrace.tracer.current_span")
+    def test_asim_formatter_format(self, mock_ddtrace_span):
+        mock_ddtrace_span_response = MagicMock()
+        mock_ddtrace_span_response.trace_id = 5735492756521486600
+        mock_ddtrace_span_response.span_id = 12448338029536640280
+        mock_ddtrace_span.return_value = mock_ddtrace_span_response
+
         log_record = logging.LogRecord(
             name=__name__,
             level=logging.INFO,
@@ -2435,6 +2445,11 @@ class LoggingTestCase(unittest.TestCase):
                     "EventResultDetails": response.status_code,
                     "FileName": "N/A",
                     "HttpStatusCode": response.status_code,
+                    "dd.trace_id": "5735492756521486600",
+                    "dd.span_id": "12448338029536640280",
+                    "env": "",
+                    "service": "",
+                    "version": "",
                 }
             )
 
