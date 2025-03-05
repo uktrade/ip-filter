@@ -3,6 +3,8 @@ import logging
 import os
 from datetime import datetime
 
+import ddtrace
+from ddtrace import tracer
 from flask import Request
 from flask import Response
 from flask import has_request_context
@@ -12,6 +14,25 @@ from utils import get_package_version
 
 
 class ASIMFormatter(logging.Formatter):
+    def _datadog_trace_dict(self):
+        event_dict = {}
+
+        span = tracer.current_span()
+        trace_id, span_id = (
+            (str((1 << 64) - 1 & span.trace_id), span.span_id) if span else (None, None)
+        )
+
+        # add ids to structlog event dictionary
+        event_dict["dd.trace_id"] = str(trace_id or 0)
+        event_dict["dd.span_id"] = str(span_id or 0)
+
+        # add the env, service, and version configured for the tracer
+        event_dict["env"] = ddtrace.config.env or ""
+        event_dict["service"] = ddtrace.config.service or ""
+        event_dict["version"] = ddtrace.config.version or ""
+
+        return event_dict
+
     def _get_event_result(self, response: Response) -> str:
         event_result = "Success" if response.status_code < 400 else "Failure"
 
@@ -72,9 +93,9 @@ class ASIMFormatter(logging.Formatter):
         }
 
         for trace_header in os.environ.get("DLFA_TRACE_HEADERS", ("X-Amzn-Trace-Id",)):
-            request_dict["AdditionalFields"]["TraceHeaders"][
-                trace_header
-            ] = request.headers.get(trace_header, None)
+            request_dict["AdditionalFields"]["TraceHeaders"][trace_header] = (
+                request.headers.get(trace_header, None)
+            )
 
         return request_dict
 
@@ -96,5 +117,7 @@ class ASIMFormatter(logging.Formatter):
         if hasattr(record, "response"):
             response_dict = self.get_response_dict(record.response)
             log_dict = log_dict | response_dict
+
+        log_dict.update(self._datadog_trace_dict())
 
         return json.dumps(log_dict)
