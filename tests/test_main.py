@@ -12,7 +12,6 @@ import uuid
 from datetime import datetime
 from unittest.mock import patch, MagicMock
 
-import ddtrace
 import urllib3
 from flask import Flask
 from flask import Response
@@ -2301,6 +2300,9 @@ class LoggingTestCase(unittest.TestCase):
         os.environ["DD_ENV"] = "test"
         os.environ["DD_SERVICE"] = "ip-filter"
         os.environ["DD_VERSION"] = "1.0.0"
+        os.environ["ECS_CONTAINER_METADATA_URI"] = (
+            "http://169.254.170.2/v3/709d1c10779d47b2a84db9eef2ebd041-0265927825"
+        )
 
     def test_asim_formatter_get_log_dict(self):
         formatter = ASIMFormatter()
@@ -2381,6 +2383,11 @@ class LoggingTestCase(unittest.TestCase):
             "HttpStatusCode": response.status_code,
         }
 
+    def test_asim_formatter_get_container_id(self):
+        container_id = ASIMFormatter()._get_container_id()
+
+        assert container_id == "709d1c10779d47b2a84db9eef2ebd041-0265927825"
+
     @patch("ddtrace.tracer.current_span")
     def test_asim_formatter_format(self, mock_ddtrace_span):
         mock_ddtrace_span_response = MagicMock()
@@ -2450,6 +2457,7 @@ class LoggingTestCase(unittest.TestCase):
                     "env": "",
                     "service": "",
                     "version": "",
+                    "container_id": "709d1c10779d47b2a84db9eef2ebd041-0265927825",
                 }
             )
 
