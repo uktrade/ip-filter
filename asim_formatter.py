@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 
 import ddtrace
-from ddtrace import tracer
+from ddtrace.trace import tracer
 from flask import Request
 from flask import Response
 from flask import has_request_context
