@@ -2128,7 +2128,7 @@ files = [
     {file = "typing_extensions-4.12.2-py3-none-any.whl", hash = "sha256:04e5ca0351e0f3f85c6853954072df659d0d13fac324d0072316b67d7794700d"},
     {file = "typing_extensions-4.12.2.tar.gz", hash = "sha256:1a7ead55c7e559dd4dee8856e3a88b41225abfe1ce8df57b7c13915fe121ffb8"},
 ]
-markers = {dev = "python_version < \"3.12\""}
+markers = {dev = "python_version ~= \"3.11.0\""}
 
 [[package]]
 name = "tzdata"
@@ -2412,4 +2412,4 @@ testing = ["coverage[toml]", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "911290bb99a717c68cc9c1cbb044099979ad29113dc4f4eb71ac239357138d20"
+content-hash = "b92da30bbee11381acbee9a17d2a20f6d8622302d58fec10fec6c8a0ad8c4d04"
