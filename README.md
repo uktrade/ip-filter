@@ -98,9 +98,12 @@ BasicAuth:
     - Path: /basic-auth-path/
       Username: myusername
       Password: mypassword
+      
+IRanges:
+   - 0.0.0.0/0
 ```
 
-Basic auth enables automated testing tools such as Browserstack to bypass the IP whitelist. This is only on non production automated testing environments where it isn't possible to whitelist the IP range of the testing service.
+Basic auth enables automated testing tools such as Browserstack to bypass the IP whitelist. This is only on non production automated testing environments where it isn't possible to whitelist the IP range of the testing service. Note that a bug [DBTP-1861](https://uktrade.atlassian.net/browse/DBTP-1861) means that the `IPRanges: ["0.0.0.0/0"]` section is also required. IMPORTANT: This means that **all** paths must be listed in the BasicAuth list or else they will be open to the public.
 
 If multiple basic auth configurations are provided, then the IP Filter ensures that at least the basic auth credentials supplied in the request authenticate against at least one of the configurations.
 
