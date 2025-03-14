@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.3](https://github.com/uktrade/ip-filter/compare/2.0.2...2.0.3) (2025-03-14)
+
+
+### Documentation
+
+* Correct docs for IP Filter's Basic Auth functionality ([#64](https://github.com/uktrade/ip-filter/issues/64)) ([f4d9009](https://github.com/uktrade/ip-filter/commit/f4d9009d15a82d756f1f8120d8931121a2d7e972))
+
 ## [2.0.2](https://github.com/uktrade/ip-filter/compare/2.0.1...2.0.2) (2024-12-30)
 
 
