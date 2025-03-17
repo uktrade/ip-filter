@@ -2405,6 +2405,19 @@ class LoggingTestCase(unittest.TestCase):
             "dd.span_id": "12448338029536640280",
         }
 
+    @patch("ddtrace.trace.tracer.current_span")
+    def test_get_first_64_bits_of(self, mock_ddtrace_span):
+        trace_id = 5735492756521486600
+
+        mock_ddtrace_span_response = MagicMock()
+        mock_ddtrace_span_response.trace_id = trace_id
+        mock_ddtrace_span_response.span_id = 12448338029536640280
+        mock_ddtrace_span.return_value = mock_ddtrace_span_response
+
+        result = ASIMFormatter()._get_first_64_bits_of(trace_id)
+
+        assert result == str(trace_id)
+
     def test_asim_formatter_get_container_id(self):
         result = ASIMFormatter()._get_container_id()
 

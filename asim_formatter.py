@@ -27,12 +27,18 @@ class ASIMFormatter(logging.Formatter):
         except (KeyError, IndexError):
             return ""
 
+    def _get_first_64_bits_of(self, trace_id: int):
+        # See https://docs.datadoghq.com/tracing/other_telemetry/connect_logs_and_traces/python/#no-standard-library-logging
+        return str((1 << 64) - 1 & trace_id)
+
     def _datadog_trace_dict(self):
         event_dict = {}
 
         span = tracer.current_span()
         trace_id, span_id = (
-            (str((1 << 64) - 1 & span.trace_id), span.span_id) if span else (None, None)
+            (self._get_first_64_bits_of(span.trace_id), span.span_id)
+            if span
+            else (None, None)
         )
 
         # add ids to structlog event dictionary
