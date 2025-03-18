@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.1.0](https://github.com/uktrade/ip-filter/compare/2.0.2...2.1.0) (2025-03-18)
+
+
+### Features
+
+* **logging:** Add fields to enable Datadog logs correlation (DBTP-1662) ([#66](https://github.com/uktrade/ip-filter/issues/66)) ([0ad4a52](https://github.com/uktrade/ip-filter/commit/0ad4a5200823ee847c960457b72fdfb938b7a2e3))
+
+
+### Documentation
+
+* Correct docs for IP Filter's Basic Auth functionality ([#64](https://github.com/uktrade/ip-filter/issues/64)) ([f4d9009](https://github.com/uktrade/ip-filter/commit/f4d9009d15a82d756f1f8120d8931121a2d7e972))
+
 ## [2.0.2](https://github.com/uktrade/ip-filter/compare/2.0.1...2.0.2) (2024-12-30)
 
 
