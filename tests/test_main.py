@@ -10,8 +10,10 @@ import unittest
 import urllib.parse
 import uuid
 from datetime import datetime
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
+from importlib import reload
 
+import ddtrace
 import urllib3
 from flask import Flask
 from flask import Response
@@ -2297,6 +2299,14 @@ class LoggingTestCase(unittest.TestCase):
         os.environ["COPILOT_ENVIRONMENT_NAME"] = "test"
         os.environ["SERVER"] = "localhost:8081"
         os.environ["EMAIL"] = "testemail"
+        os.environ["DD_ENV"] = "test"
+        os.environ["DD_SERVICE"] = "ip-filter"
+        os.environ["DD_VERSION"] = "1.0.0"
+        os.environ["ECS_CONTAINER_METADATA_URI"] = (
+            "http://169.254.170.2/v3/709d1c10779d47b2a84db9eef2ebd041-0265927825"
+        )
+
+        reload(ddtrace)
 
     def test_asim_formatter_get_log_dict(self):
         formatter = ASIMFormatter()
@@ -2377,7 +2387,49 @@ class LoggingTestCase(unittest.TestCase):
             "HttpStatusCode": response.status_code,
         }
 
-    def test_asim_formatter_format(self):
+    @patch("ddtrace.trace.tracer.current_span")
+    def test_datadog_trace_dict(self, mock_ddtrace_span):
+        mock_ddtrace_span_response = MagicMock()
+        mock_ddtrace_span_response.trace_id = 5735492756521486600
+        mock_ddtrace_span_response.span_id = 12448338029536640280
+        mock_ddtrace_span.return_value = mock_ddtrace_span_response
+
+        result = ASIMFormatter()._datadog_trace_dict()
+
+        assert result == {
+            "service": "ip-filter",
+            "env": "test",
+            "version": "1.0.0",
+            "container_id": "709d1c10779d47b2a84db9eef2ebd041-0265927825",
+            "dd.trace_id": "5735492756521486600",
+            "dd.span_id": "12448338029536640280",
+        }
+
+    @patch("ddtrace.trace.tracer.current_span")
+    def test_get_first_64_bits_of(self, mock_ddtrace_span):
+        trace_id = 5735492756521486600
+
+        mock_ddtrace_span_response = MagicMock()
+        mock_ddtrace_span_response.trace_id = trace_id
+        mock_ddtrace_span_response.span_id = 12448338029536640280
+        mock_ddtrace_span.return_value = mock_ddtrace_span_response
+
+        result = ASIMFormatter()._get_first_64_bits_of(trace_id)
+
+        assert result == str(trace_id)
+
+    def test_asim_formatter_get_container_id(self):
+        result = ASIMFormatter()._get_container_id()
+
+        assert result == "709d1c10779d47b2a84db9eef2ebd041-0265927825"
+
+    @patch("ddtrace.trace.tracer.current_span")
+    def test_asim_formatter_format(self, mock_ddtrace_span):
+        mock_ddtrace_span_response = MagicMock()
+        mock_ddtrace_span_response.trace_id = 5735492756521486600
+        mock_ddtrace_span_response.span_id = 12448338029536640280
+        mock_ddtrace_span.return_value = mock_ddtrace_span_response
+
         log_record = logging.LogRecord(
             name=__name__,
             level=logging.INFO,
@@ -2435,6 +2487,12 @@ class LoggingTestCase(unittest.TestCase):
                     "EventResultDetails": response.status_code,
                     "FileName": "N/A",
                     "HttpStatusCode": response.status_code,
+                    "dd.trace_id": "5735492756521486600",
+                    "dd.span_id": "12448338029536640280",
+                    "env": "test",
+                    "service": "ip-filter",
+                    "version": "1.0.0",
+                    "container_id": "709d1c10779d47b2a84db9eef2ebd041-0265927825",
                 }
             )
 
