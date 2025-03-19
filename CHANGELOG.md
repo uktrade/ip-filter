@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.1](https://github.com/uktrade/ip-filter/compare/2.1.0...2.1.1) (2025-03-19)
+
+
+### Bug Fixes
+
+* IP-filter unable to build in CI (DBTP-1662) ([#69](https://github.com/uktrade/ip-filter/issues/69)) ([8298c10](https://github.com/uktrade/ip-filter/commit/8298c1060c272fbbf3277cd296376c7e38eb505c))
+
 ## [2.1.0](https://github.com/uktrade/ip-filter/compare/2.0.2...2.1.0) (2025-03-18)
 
 
