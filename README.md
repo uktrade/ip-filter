@@ -147,7 +147,7 @@ Speak to SRE to get the ip-filter Sentry DSN.
 2. Install the required dependencies:
 
    ```shell
-   pip install poetry && poetry install && poetry run pre-commit install
+   pip install poetry && poetry install --no-root && poetry run pre-commit install
    ```
 
 ### Testing
