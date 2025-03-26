@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.2](https://github.com/uktrade/ip-filter/compare/2.1.2...2.1.1) (2025-03-26)
+
+
+### Dependencies
+
+* Bump gunicorn from 22.0.0 to 23.0.0 ([#71](https://github.com/uktrade/ip-filter/issues/71)) ([a39bb3e](https://github.com/uktrade/ip-filter/commit/a39bb3e1fa5a180eb0e02a1b0a089cc65399b366))
+
 ## [2.1.1](https://github.com/uktrade/ip-filter/compare/2.1.0...2.1.1) (2025-03-19)
 
 
