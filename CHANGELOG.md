@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.2](https://github.com/uktrade/ip-filter/compare/2.1.1...2.1.2) (2025-03-26)
+
+
+### Bug Fixes
+
+* Add changelog for Gunicorn update (off-ticket) ([#73](https://github.com/uktrade/ip-filter/issues/73)) ([9dacf1b](https://github.com/uktrade/ip-filter/commit/9dacf1bb2ae1881c486136203f5a9c9798406dfe))
+
 ## [2.1.2](https://github.com/uktrade/ip-filter/compare/2.1.2...2.1.1) (2025-03-26)
 
 
