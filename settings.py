@@ -1,15 +1,49 @@
 import logging
+import logging.config
 import os
 import sys
-
 from config import Environ
+from asim_formatter import ASIMFormatter
+
 
 env = Environ(os.environ)
 
 LOG_LEVEL = env.get("LOG_LEVEL", "INFO")
 
-logging.basicConfig(stream=sys.stdout, level=LOG_LEVEL)
-logger = logging.getLogger(__name__)
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": True,
+    "formatters": {
+        "asim_formatter": {
+            "()": ASIMFormatter,
+        },
+    },
+    "handlers": {
+        "stdout": {
+            "class": "logging.StreamHandler",
+            "stream": sys.stdout,
+            "formatter": "asim_formatter",
+        },
+    },
+    "root": {
+        "handlers": ["stdout"],
+        "level": "INFO",
+    },
+    "loggers": {
+        "werkzeug": {
+            "handlers": ["stdout"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "": {
+            "handlers": ["stdout"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}
+
+logging.config.dictConfig(LOGGING)
 
 # Flask-Caching related configs
 CACHE_TYPE = "SimpleCache"
