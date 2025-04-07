@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.1.3](https://github.com/uktrade/ip-filter/compare/2.1.2...2.1.3) (2025-04-07)
+
+
+### Bug Fixes
+
+* Changing ip filter address (DBTP-1602) ([#76](https://github.com/uktrade/ip-filter/issues/76)) ([bc6adb1](https://github.com/uktrade/ip-filter/commit/bc6adb1286f24108981cf3385081ebb1d7a6327b))
+* Logs formatted ASIM (DBTP-1602) ([#75](https://github.com/uktrade/ip-filter/issues/75)) ([ef7e7af](https://github.com/uktrade/ip-filter/commit/ef7e7af9e16f12fe8f08193b63c08df50fbb214a))
+
 ## [2.1.2](https://github.com/uktrade/ip-filter/compare/2.1.2...2.1.1) (2025-03-26)
 
 
