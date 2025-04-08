@@ -18,7 +18,7 @@ services:
       LOG_LEVEL: INFO
       SERVER: host.docker.internal:8080
       #SENTRY_DSN: https://.... 
-      IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX: -2
+      # IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX: -2
       # X-FORWARDED-FOR: 1.1.1.1
       
   app:
