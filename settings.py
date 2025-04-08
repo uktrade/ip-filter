@@ -21,9 +21,7 @@ LOGGING = {
     "handlers": {
         "stdout": {
             "class": "logging.StreamHandler",
-            "stream": sys.stdout,
-            # "formatter": "asim_formatter",
-            # "propagate": False
+            "stream": sys.stdout
         },
     },
     "root": {
