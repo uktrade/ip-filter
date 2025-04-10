@@ -55,10 +55,10 @@ PoolClass = (
 )
 http = PoolClass(app.config["SERVER"], maxsize=10)
 
-logging.basicConfig(stream=sys.stdout, level=app.config["LOG_LEVEL"])
-default_handler.setFormatter(ASIMFormatter())
-logger = logging.getLogger(__name__)
-logger.addHandler(default_handler)
+# logging.basicConfig(stream=sys.stdout, level=app.config["LOG_LEVEL"])
+# default_handler.setFormatter(ASIMFormatter())
+# logger = logging.getLogger(__name__)
+# logger.addHandler(default_handler)
 request_id_alphabet = string.ascii_letters + string.digits
 
 urllib3_log_level = logging.getLevelName(os.getenv("URLLIB3_LOG_LEVEL", "WARN"))
@@ -96,10 +96,10 @@ def handle_request(u_path):
         choices(request_id_alphabet, k=8)
     )
 
-    logger.info("[%s] Start", request_id)
+    app.logger.info("[%s] Start", request_id)
 
     forwarded_url = request.path
-    logger.info("[%s] Forwarded URL: %s", request_id, forwarded_url)
+    app.logger.info("[%s] Forwarded URL: %s", request_id, forwarded_url)
 
     # Find x-forwarded-for
     try:
@@ -108,7 +108,7 @@ def handle_request(u_path):
         if request.headers.get("user-agent", "").startswith("ELB-HealthChecker"):
             return "OK"
 
-        logger.error("[%s] X-Forwarded-For header is missing", request_id)
+        app.logger.error("[%s] X-Forwarded-For header is missing", request_id)
         return render_access_denied("Unknown", forwarded_url, request_id)
 
     try:
@@ -116,7 +116,7 @@ def handle_request(u_path):
             app.config["IP_DETERMINED_BY_X_FORWARDED_FOR_INDEX"]
         ].strip()
     except IndexError:
-        logger.error(
+        app.logger.error(
             "[%s] Not enough addresses in x-forwarded-for %s",
             request_id,
             x_forwarded_for,
@@ -130,7 +130,7 @@ def handle_request(u_path):
         # public and protected path settings are mutually exclusive. If both are enabled, we ignore the PROTECTED_PATHS
         # setting and emit a log message to indicate the that the IP Filter is
         # misconfigured.
-        logger.warning(
+        app.logger.warning(
             "Configuration error: PROTECTED_PATHS and PUBLIC_PATHS are mutually exclusive; ignoring PROTECTED_PATHS"
         )
         protected_paths = []
@@ -139,7 +139,7 @@ def handle_request(u_path):
     pub_host_list = app.config["PUB_HOST_LIST"]
 
     if priv_host_list and pub_host_list:
-        logger.warning(
+        app.logger.warning(
             "Configuration error: PRIV_HOST_LIST and PUB_HOST_LIST are mutually exclusive; ignoring PRIV_HOST_LIST"
         )
         priv_host_list = []
@@ -177,10 +177,10 @@ def handle_request(u_path):
         try:
             ip_filter_rules = get_ipfilter_config(app.config["APPCONFIG_PROFILES"])
         except ValidationError as ex:
-            logger.error(f"[%s] {ex}", request_id)
+            app.logger.error(f"[%s] {ex}", request_id)
             return render_access_denied(client_ip, forwarded_url, request_id)
         except Exception as ex:
-            logger.error(f"[%s] {ex}", request_id)
+            app.logger.error(f"[%s] {ex}", request_id)
             return render_access_denied(client_ip, forwarded_url, request_id, str(ex))
 
         additional_ip_list = app.config["ADDITIONAL_IP_LIST"]
@@ -271,10 +271,10 @@ def handle_request(u_path):
         )
 
         if not all_checks_passed:
-            logger.warning("[%s] Request blocked for %s", request_id, client_ip)
+            app.logger.warning("[%s] Request blocked for %s", request_id, client_ip)
             return render_access_denied(client_ip, forwarded_url, request_id)
 
-    logger.info("[%s] Making request to origin", request_id)
+    app.logger.info("[%s] Making request to origin", request_id)
 
     # We proxy request data via an iterable, but only if we need to. This avoids turning GET
     # requests without bodies into "transfer-encoding: chunked" requests, which can cause certain
@@ -300,12 +300,14 @@ def handle_request(u_path):
         retries=False,
         body=request_body,
     )
-    logger.info("[%s] Origin response status: %s", request_id, origin_response.status)
+    app.logger.info(
+        "[%s] Origin response status: %s", request_id, origin_response.status
+    )
 
     def release_conn():
         origin_response.close()
         origin_response.release_conn()
-        logger.info("[%s] End", request_id)
+        app.logger.info("[%s] End", request_id)
 
     downstream_response = Response(
         origin_response.stream(65536, decode_content=False),
@@ -319,7 +321,7 @@ def handle_request(u_path):
     downstream_response.autocorrect_location_header = False
     downstream_response.call_on_close(release_conn)
 
-    logger.info("[%s] Starting response to client", request_id)
+    app.logger.info("[%s] Starting response to client", request_id)
 
     return downstream_response
 

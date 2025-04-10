@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -qq build-essential \
 WORKDIR /app
 
 COPY pyproject.toml /app
-RUN pip install poetry && poetry add honcho && poetry install
+RUN pip install poetry && poetry add honcho && poetry install --no-root
 
 
 COPY . /app
