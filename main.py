@@ -55,10 +55,6 @@ PoolClass = (
 )
 http = PoolClass(app.config["SERVER"], maxsize=10)
 
-# logging.basicConfig(stream=sys.stdout, level=app.config["LOG_LEVEL"])
-# default_handler.setFormatter(ASIMFormatter())
-# logger = logging.getLogger(__name__)
-# logger.addHandler(default_handler)
 request_id_alphabet = string.ascii_letters + string.digits
 
 urllib3_log_level = logging.getLevelName(os.getenv("URLLIB3_LOG_LEVEL", "WARN"))
