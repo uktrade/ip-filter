@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.1.4](https://github.com/uktrade/ip-filter/compare/2.1.3...2.1.4) (2025-04-10)
+
+
+### Dependencies
+
+* Bump dbt-copilot-python from 0.2.2 to 0.2.3 ([#83](https://github.com/uktrade/ip-filter/issues/83)) ([babd423](https://github.com/uktrade/ip-filter/commit/babd42385520ceb060a0764bb479f9160aa2bc28))
+* Bump ddtrace from 3.1.0 to 3.4.1 ([#82](https://github.com/uktrade/ip-filter/issues/82)) ([a0bdf44](https://github.com/uktrade/ip-filter/commit/a0bdf44d20422b4e6a0cdca36a5afdd839a10ddb))
+* Bump flask from 2.3.2 to 3.1.0 ([#87](https://github.com/uktrade/ip-filter/issues/87)) ([c0e10c6](https://github.com/uktrade/ip-filter/commit/c0e10c61dabd5d326cf9104d6cb5c3851063999c))
+* Bump sentry-sdk from 2.18.0 to 2.25.1 ([#80](https://github.com/uktrade/ip-filter/issues/80)) ([384998a](https://github.com/uktrade/ip-filter/commit/384998a12458503314b552d6273c2835f8ea2151))
+
 ## [2.1.3](https://github.com/uktrade/ip-filter/compare/2.1.2...2.1.3) (2025-04-07)
 
 
