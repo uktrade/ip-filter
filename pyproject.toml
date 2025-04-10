@@ -21,7 +21,7 @@ gevent = "^24.2.1"
 ddtrace = "^3.4.1"
 
 [tool.poetry.group.dev.dependencies]
-coverage = "^7.5.0"
+coverage = "^7.8.0"
 multiprocess = "^0.70.14"
 parameterized = "^0.9.0"
 pre-commit = "^4.2.0"
