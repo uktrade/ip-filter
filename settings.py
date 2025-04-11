@@ -28,6 +28,8 @@ LOGGING = {
     "root": {
         "handlers": ["stdout"],
         "level": "INFO",
+        "formatter": "asim_formatter",
+        "propagate": False
     },
     "loggers": {
         "werkzeug": {
