@@ -517,14 +517,14 @@ toml = ["tomli ; python_full_version <= \"3.11.0a6\""]
 
 [[package]]
 name = "dbt-copilot-python"
-version = "0.2.3"
+version = "1.0.0"
 description = "Helper functions to run Django and Flask applications in AWS Copilot/ECS."
 optional = false
 python-versions = "<4.0,>=3.9"
 groups = ["main"]
 files = [
-    {file = "dbt_copilot_python-0.2.3-py3-none-any.whl", hash = "sha256:929342aa8841627353dd823e8b31932a4947c760893167f466aa91c78f289abe"},
-    {file = "dbt_copilot_python-0.2.3.tar.gz", hash = "sha256:0866989b07ad0d35abe5183f703a7316212f88a52d78df589b413a69a875f8c9"},
+    {file = "dbt_copilot_python-1.0.0-py3-none-any.whl", hash = "sha256:d9917587b5c7de8459f0f70e791b79351f92349fe045903564ff22634ac3952b"},
+    {file = "dbt_copilot_python-1.0.0.tar.gz", hash = "sha256:be87ba8b61a62f29dcf40cb269dc381870009deac46a38bbc273bb903d48555f"},
 ]
 
 [package.dependencies]
@@ -2410,4 +2410,4 @@ testing = ["coverage[toml]", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "0407e8c19d6b5d603b63112fb62ca153b0298855fa75a32d8c11485a92e73e4a"
+content-hash = "34aea7c5ad583e8b5d8778487b81b997cc5ecc09d2b4c45aaea5adb7de8b1d66"
