@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.5](https://github.com/uktrade/ip-filter/compare/2.1.4...2.1.5) (2025-04-11)
+
+
+### Bug Fixes
+
+* Log formatting (DBTP-1603) ([#78](https://github.com/uktrade/ip-filter/issues/78)) ([ff7e2a7](https://github.com/uktrade/ip-filter/commit/ff7e2a719eb65a3baa4e4f8925103ca160facd52))
+
 ## [2.1.4](https://github.com/uktrade/ip-filter/compare/2.1.3...2.1.4) (2025-04-10)
 
 
