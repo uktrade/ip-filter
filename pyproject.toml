@@ -15,7 +15,7 @@ pyyaml = "^6.0.1"
 schema = "^0.7.5"
 toml = "^0.10.2"
 flask-caching = "^2.1.0"
-dbt-copilot-python = "^0.2.3"
+dbt-copilot-python = "^1.1.0"
 sentry-sdk = {extras = ["flask"], version = "^2.25.1"}
 gevent = "^24.2.1"
 ddtrace = "^3.4.1"
